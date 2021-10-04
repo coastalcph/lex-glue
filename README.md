@@ -1,5 +1,7 @@
 # LexGLUE: A Benchmark Dataset for Legal Language Understanding in English :balance_scale: :trophy: :student: :woman_judge:
 
+![LexGLUE Graphic](https://repository-images.githubusercontent.com/411072132/5c49b313-ab36-4391-b785-40d9478d0f73)
+
 ## Dataset Summary
 
 Inspired by the recent widespread use of the GLUE multi-task benchmark NLP dataset ([Wang et al., 2018](https://aclanthology.org/W18-5446/)), the subsequent more difficult SuperGLUE ([Wang et al., 2109](https://openreview.net/forum?id=rJ4km2R5t7)), other previous multi-task NLP benchmarks ([Conneau and Kiela,2018](https://aclanthology.org/L18-1269/); [McCann et al., 2018](https://arxiv.org/abs/1806.08730)), and similar initiatives in other domains ([Peng et al., 2019](https://arxiv.org/abs/1906.05474)), we introduce LexGLUE, a benchmark dataset to evaluate the performance of NLP methods in legal tasks. LexGLUE is based on seven existing legal NLP datasets, selected using criteria largely from SuperGLUE.
