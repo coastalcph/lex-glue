@@ -96,8 +96,11 @@ and then run it:
 
 
 ### How to participate?
-To submit new results, we ask participants to re-use and expand our code, if possible, and raise a new issue in our repository (https://github.com/coastalcph/lex-glue/issues/new) presenting their results, providing the auto-generated result logs and the relevant publication (or pre-print), if available, accompanied with a pull request including the code amendments that are needed to reproduce their experiments. Upon reviewing your results, we'll update the public leaderboard accordingly.
 
-### I still have open questions
+We are currently still lacking some technical infrastructure, e.g., an integrated submission environment comprised of an automated evaluation and an automatically updated leaderboard. We plan to develop the necessary publicly available web infrastructure extend the public infrastructure of LexGLUE in the near future. 
 
-Please communicate with the corresponding author via e-mail.
+In the mean-time, we ask participants to re-use and expand our code to submit new results, if possible, and raise a new issue in our repository (https://github.com/coastalcph/lex-glue/issues/new) presenting their results, providing the auto-generated result logs and the relevant publication (or pre-print), if available, accompanied with a pull request including the code amendments that are needed to reproduce their experiments. Upon reviewing your results, we'll update the public leaderboard accordingly.
+
+### I still have open questions...
+
+Please post your question on [Discussions](https://github.com/coastalcph/lex-glue/discussions) section or communicate with the corresponding author via e-mail.
