@@ -14,9 +14,9 @@ By unifying and facilitating the access to a set of law-related datasets and tas
 
 If you participate, use the LexGLUE benchmark, or our experimentation library, please cite:
 
-*Ilias Chalkidis, Abhik Jana, Dirk Hartung, Michael Bommarito, Ion Androutsopoulos, Daniel Martin Katz, and Nikolaos Aletras.*
+[*Ilias Chalkidis, Abhik Jana, Dirk Hartung, Michael Bommarito, Ion Androutsopoulos, Daniel Martin Katz, and Nikolaos Aletras.*
 *LexGLUE: A Benchmark Dataset for Legal Language Understanding in English.*
-*Arxiv Preprint. 2021*
+*2021. arXiv: 2110.00976.*](https://arxiv.org/abs/2110.00976)
 ```
 @article{chalkidis-etal-2021-lexglue,
         title={LexGLUE: A Benchmark Dataset for Legal Language Understanding in English}, 
@@ -24,9 +24,10 @@ If you participate, use the LexGLUE benchmark, or our experimentation library, p
         Bommarito, Michael and Androutsopoulos, Ion and Katz, Daniel Martin and
         Aletras, Nikolaos},
         year={2021},
-        eprint={xxxx.xxxxx},
+        eprint={2110.00976},
         archivePrefix={arXiv},
-        primaryClass={cs.CL}
+        primaryClass={cs.CL},
+        note = {arXiv: 2110.00976},
 }
 ```
 
@@ -43,6 +44,34 @@ If you participate, use the LexGLUE benchmark, or our experimentation library, p
 | UNFAIR-ToS | [Lippi et al. (2019)](https://arxiv.org/abs/1805.01217) | Contracts | Multi-label classification | 5,532/2,275/1,607 | 8 |
 | CaseHOLD | [Zheng et al. (2021)](https://arxiv.org/abs/2104.08671) | US Law | Multiple choice QA | 45,000/3,900/3,900 | n/a |
 
+
+### ECtHR (Task A)
+
+The European Court of Human Rights (ECtHR) hears allegations that a state has breached human rights provisions of the European Convention of Human Rights (ECHR). For each case, the dataset provides a list of factual paragraphs (facts) from the case description. Each case is mapped to articles of the ECHR that were violated (if any).
+
+### ECtHR (Task B)
+
+The European Court of Human Rights (ECtHR) hears allegations that a state has breached human rights provisions of the European Convention of Human Rights (ECHR). For each case, the dataset provides a list of factual paragraphs (facts) from the case description. Each case is mapped to articles of ECHR that were allegedly violated (considered by the court).
+
+### SCOTUS
+
+The US Supreme Court (SCOTUS) is the highest federal court in the United States of America and generally hears only the most controversial or otherwise complex cases which have not been sufficiently well solved by lower courts. This is a single-label multi-class classification task, where given a document (court opinion), the task is to predict the relevant issue areas. The 14 issue areas cluster 278 issues whose focus is on the subject matter of the controversy (dispute).
+
+### EUR-LEX
+
+European Union (EU) legislation is published in EUR-Lex portal. All EU laws are annotated by EU's Publications Office with multiple concepts from the EuroVoc thesaurus, a multilingual thesaurus maintained by the Publications Office. The current version of EuroVoc contains more than 7k concepts referring to various activities of the EU and its Member States (e.g., economics, health-care, trade). Given a document, the task is to predict its EuroVoc labels (concepts).
+
+### LEDGAR
+
+LEDGAR dataset aims contract provision (paragraph) classification. The contract provisions come from contracts obtained from the US Securities and Exchange Commission (SEC) filings, which are publicly available from EDGAR. Each label represents the single main topic (theme) of the corresponding contract provision.
+
+### UNFAIR-ToS
+
+The UNFAIR-ToS dataset contains 50 Terms of Service (ToS) from on-line platforms (e.g., YouTube, Ebay, Facebook, etc.). The dataset has been annotated on the sentence-level with 8 types of unfair contractual terms (sentences), meaning terms that potentially violate user rights according to the European consumer law.
+
+### CaseHOLD
+
+The CaseHOLD (Case Holdings on Legal Decisions) dataset includes multiple choice questions about holdings of US court cases from the Harvard Law Library case law corpus. Holdings are short summaries of legal rulings accompany referenced decisions relevant for the present case. The input consists of an excerpt (or prompt) from a court decision, containing a reference to a particular case, while the holding statement is masked out. The model must identify the correct (masked) holding statement from a selection of five choices.
 
 ## Leaderboard
 
