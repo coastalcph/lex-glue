@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-""" Finetuning models on LEDGAR-80K (e.g. Bert, RoBERTa, LEGAL-BERT)."""
+""" Finetuning models on LEDGAR (e.g. Bert, RoBERTa, LEGAL-BERT)."""
 
 import logging
 import os

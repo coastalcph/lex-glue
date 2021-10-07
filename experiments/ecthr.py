@@ -322,7 +322,7 @@ def main():
             case_template = [[0] * data_args.max_seq_length]
             if config.model_type == 'roberta':
                 batch = {'input_ids': [], 'attention_mask': []}
-                for case in examples['facts']:
+                for case in examples['text']:
                     case_encodings = tokenizer(case[:data_args.max_seg_length], padding=padding,
                                                max_length=data_args.max_seq_length, truncation=True)
                     batch['input_ids'].append(case_encodings['input_ids'] + case_template * (
@@ -333,7 +333,7 @@ def main():
                 cases = []
                 max_position_embeddings = config.max_position_embeddings - 2 if config.model_type == 'longformer' \
                     else config.max_position_embeddings
-                for case in examples['facts']:
+                for case in examples['text']:
                     cases.append(f' {tokenizer.sep_token} '.join([' '.join(fact.split()[:data_args.max_seq_length]) for fact in case[:data_args.max_seg_length]]))
                 batch = tokenizer(cases, padding=padding, max_length=max_position_embeddings, truncation=True)
                 if config.model_type == 'longformer':
@@ -343,7 +343,7 @@ def main():
                     batch['global_attention_mask'] = list(global_attention_mask)
             else:
                 batch = {'input_ids': [], 'attention_mask': [], 'token_type_ids': []}
-                for case in examples['facts']:
+                for case in examples['text']:
                     case_encodings = tokenizer(case[:data_args.max_seg_length], padding=padding,
                                                max_length=data_args.max_seq_length, truncation=True)
                     batch['input_ids'].append(case_encodings['input_ids'] + case_template * (data_args.max_seg_length - len(case_encodings['input_ids'])))
@@ -351,7 +351,7 @@ def main():
                     batch['token_type_ids'].append(case_encodings['token_type_ids'] + case_template * (data_args.max_seg_length - len(case_encodings['token_type_ids'])))
         else:
             cases = []
-            for case in examples['facts']:
+            for case in examples['text']:
                 cases.append(f'\n'.join(case))
             batch = tokenizer(cases, padding=padding, max_length=512, truncation=True)
 
@@ -401,7 +401,7 @@ def main():
         # Fix gold labels
         y_true = np.zeros((p.label_ids.shape[0], p.label_ids.shape[1] + 1), dtype=np.int32)
         y_true[:, :-1] = p.label_ids
-        y_true[:, -1] = (np.sum(p.label_ids, axis=1) != 0).astype('int32')
+        y_true[:, -1] = (np.sum(p.label_ids, axis=1) == 0).astype('int32')
         # Fix predictions
         logits = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
         preds = (expit(logits) > 0.5).astype('int32')

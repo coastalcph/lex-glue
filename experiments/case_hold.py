@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# coding=utf-8
+""" Finetuning models on CaseHOLD (e.g. Bert, RoBERTa, LEGAL-BERT)."""
+
 import logging
 import os
 from dataclasses import dataclass, field
@@ -21,7 +25,7 @@ from transformers import (
 )
 from transformers.trainer_utils import is_main_process
 from transformers import EarlyStoppingCallback
-from dataloaders.casehold import MultipleChoiceDataset, Split
+from casehold_helpers import MultipleChoiceDataset, Split
 from sklearn.metrics import f1_score
 from models.deberta import DebertaForMultipleChoice
 

@@ -10,7 +10,6 @@ def main():
 
     # Required arguments
     parser.add_argument('--dataset',  default='eurlex')
-    parser.add_argument('--scratch', default=False)
     config = parser.parse_args()
 
     BASE_DIR = f'logs/{config.dataset}'

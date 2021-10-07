@@ -352,7 +352,7 @@ def main():
         else:
             batch = tokenizer(examples['text'], padding=padding, max_length=512, truncation=True)
 
-        batch["label"] = [label_list.index(labels) for labels in examples["issueArea"]]
+        batch["label"] = [label_list.index(labels) for labels in examples["label"]]
 
         return batch
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-""" Finetuning models on EURLEX-65K (e.g. Bert, RoBERTa, LEGAL-BERT)."""
+""" Finetuning models on EUR-LEX (e.g. Bert, RoBERTa, LEGAL-BERT)."""
 
 import logging
 import os
@@ -378,7 +378,7 @@ def main():
         output_predict_file = os.path.join(training_args.output_dir, "test_predictions.csv")
         if trainer.is_world_process_zero():
             with open(output_predict_file, "w") as writer:
-                for index, pred_list in enumerate(predictions[0]):
+                for index, pred_list in enumerate(predictions):
                     pred_line = '\t'.join([f'{pred:.5f}' for pred in pred_list])
                     writer.write(f"{index}\t{pred_line}\n")
 
