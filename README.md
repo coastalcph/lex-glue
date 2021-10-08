@@ -41,7 +41,7 @@ If you participate, use the LexGLUE benchmark, or our experimentation library, p
 | SCOTUS | [Spaeth et al. (2020)](http://scdb.wustl.edu) | US Law | Multi-class classification | 5,000/1,400/1,400 | 14 | 
 | EUR-LEX | [Chalkidis et al. (2021b)](https://arxiv.org/abs/2109.00904) | EU Law | Multi-label classification | 55,000/5,000/5,000 | 100 |
 | LEDGAR | [Tuggener et al. (2020)](https://aclanthology.org/2020.lrec-1.155/) | Contracts | Multi-class classification | 60,000/10,000/10,000 | 100 |
-| UNFAIR-ToS | [Lippi et al. (2019)](https://arxiv.org/abs/1805.01217) | Contracts | Multi-label classification | 5,532/2,275/1,607 | 8 |
+| UNFAIR-ToS | [Lippi et al. (2019)](https://arxiv.org/abs/1805.01217) | Contracts | Multi-label classification | 5,532/2,275/1,607 | 8+1 |
 | CaseHOLD | [Zheng et al. (2021)](https://arxiv.org/abs/2104.08671) | US Law | Multiple choice QA | 45,000/3,900/3,900 | n/a |
 
 
@@ -78,13 +78,13 @@ The CaseHOLD (Case Holdings on Legal Decisions) dataset includes multiple choice
 | Dataset | ECtHR Task A  | ECtHR Task B  | SCOTUS  | EUR-LEX | LEDGAR  | UNFAIR-ToS  | CaseHOLD |
 | --- | ---- | --- | --- | --- | --- | --- | --- |
 | Model | μ-F1  / m-F1  | μ-F1  / m-F1  | μ-F1  / m-F1  | μ-F1  / m-F1  | μ-F1  / m-F1  | μ-F1  / m-F1 | μ-F1 / m-F1   | 
-|  BERT ([Devlin et al., 2018](https://arxiv.org/abs/1810.04805))  | **71.4**  / 64.0   | 87.6  / **77.8**  | 70.5   / 60.9  | 71.6  / 55.6  | 87.7   / 82.2  | 87.5  / 81.0 | 70.7    | 
-|  RoBERTa ([Liu et al., 2019](https://arxiv.org/abs/1907.11692)) | 69.5  / 60.7  | 87.2  / 77.3  | 70.8   / 61.2  | 71.8  / **57.5**  | 87.9  /  82.1  | 87.7 / 81.5 | 71.7  | 
-|  DeBERTa ([He et al., 2021](https://arxiv.org/abs/2006.03654)) | 69.1   / 61.2  | 87.4   / 77.3  | 70.0  / 60.0  | **72.3**  / 57.2  | 87.9   / 82.0  | 87.2 / 78.8 | 72.1   | 
-|  Longformer ([Beltagy et al., 2020](https://arxiv.org/abs/2004.05150)) | 69.6  / 62.4  | 88.0  / **77.8**  | 72.2  / 62.5  | 71.9  / 56.7  | 87.7  / 82.3  | 87.7 / 80.1 | 72.0   | 
-|  BigBird ([Zaheer et al., 2021](https://arxiv.org/abs/2007.14062)) | 70.5  / 63.8  | **88.1**  / 76.6  | 71.7  / 61.4  | 71.8  / 56.6  | 87.7 / 82.1  | 87.7 / 80.2 | 70.4   | 
-|  Legal-BERT ([Chalkidis et al., 2020](https://aclanthology.org/2020.findings-emnlp.261/)) | 71.2  / **64.6**  | 88.0  / 77.2  | 76.2  / 65.8  | 72.2  / 56.2  | **88.1**  / **82.7** | **88.6**  / **82.3** | 75.1 | 
-|  CaseLaw-BERT ([Zheng et al., 2021](https://arxiv.org/abs/2104.08671)) | 71.2   / 64.2  | 88.0   / 77.5  | **76.4**  / **66.2**  | 71.0  / 55.9  | 88.0  / 82.3 | 88.3  / 81.0 | **75.6**   | 
+|  BERT ([Devlin et al., 2018](https://arxiv.org/abs/1810.04805))  | **71.4**  / 64.0   | 87.6  / **77.8**  | 70.5   / 60.9  | 71.6  / 55.6  | 87.7   / 82.2  | 97.3  / 80.4 | 70.7    | 
+|  RoBERTa ([Liu et al., 2019](https://arxiv.org/abs/1907.11692)) | 69.5  / 60.7  | 87.2  / 77.3  | 70.8   / 61.2  | 71.8  / **57.5**  | 87.9  /  82.1  | 97.2 / 79.6 | 71.7  | 
+|  DeBERTa ([He et al., 2021](https://arxiv.org/abs/2006.03654)) | 69.1   / 61.2  | 87.4   / 77.3  | 70.0  / 60.0  | **72.3**  / 57.2  | 87.9   / 82.0  | 97.2 / 80.2 | 72.1   | 
+|  Longformer ([Beltagy et al., 2020](https://arxiv.org/abs/2004.05150)) | 69.6  / 62.4  | 88.0  / **77.8**  | 72.2  / 62.5  | 71.9  / 56.7  | 87.7  / 82.3  | **97.5** / 81.0 | 72.0   | 
+|  BigBird ([Zaheer et al., 2021](https://arxiv.org/abs/2007.14062)) | 70.5  / 63.8  | **88.1**  / 76.6  | 71.7  / 61.4  | 71.8  / 56.6  | 87.7 / 82.1  | 97.4 / 81.1 | 70.4   | 
+|  Legal-BERT ([Chalkidis et al., 2020](https://aclanthology.org/2020.findings-emnlp.261/)) | 71.2  / **64.6**  | 88.0  / 77.2  | 76.2  / 65.8  | 72.2  / 56.2  | **88.1**  / **82.7** | 97.4  / **83.4** | 75.1 | 
+|  CaseLaw-BERT ([Zheng et al., 2021](https://arxiv.org/abs/2104.08671)) | 71.2   / 64.2  | 88.0   / 77.5  | **76.4**  / **66.2**  | 71.0  / 55.9  | 88.0  / 82.3 | 97.4  / 82.4 | **75.6**   | 
 
 ## Frequently Asked Questions (FAQ)
 
