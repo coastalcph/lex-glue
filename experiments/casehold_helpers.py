@@ -52,7 +52,7 @@ if is_torch_available():
             overwrite_cache=False,
             mode: Split = Split.train,
         ):
-            dataset = datasets.load_dataset('lex_glue', task)
+            dataset = datasets.load_dataset('lex_glue', task, data_dir='data')
             tokenizer_name = re.sub('[^a-z]+', ' ', tokenizer.name_or_path).title().replace(' ', '')
             cached_features_file = os.path.join(
                 '.cache',
@@ -119,7 +119,7 @@ if is_tf_available():
             overwrite_cache=False,
             mode: Split = Split.train,
         ):
-            dataset = datasets.load_dataset('lex_glue', task)
+            dataset = datasets.load_dataset('lex_glue', task, data_dir='data')
 
             logger.info(f"Creating features from dataset file at {task}")
             if mode == Split.dev:

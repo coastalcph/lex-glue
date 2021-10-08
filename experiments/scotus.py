@@ -220,13 +220,13 @@ def main():
     # download the dataset.
     # Downloading and loading eurlex dataset from the hub.
     if training_args.do_train:
-        train_dataset = load_dataset("lex_glue", "scotus", split="train", cache_dir=model_args.cache_dir)
+        train_dataset = load_dataset("lex_glue", "scotus", split="train", data_dir='data', cache_dir=model_args.cache_dir)
 
     if training_args.do_eval:
-        eval_dataset = load_dataset("lex_glue", "scotus", split="validation", cache_dir=model_args.cache_dir)
+        eval_dataset = load_dataset("lex_glue", "scotus", split="validation", data_dir='data', cache_dir=model_args.cache_dir)
 
     if training_args.do_predict:
-        predict_dataset = load_dataset("lex_glue", "scotus", split="test", cache_dir=model_args.cache_dir)
+        predict_dataset = load_dataset("lex_glue", "scotus", split="test", data_dir='data', cache_dir=model_args.cache_dir)
 
     # Labels
     label_list = list(range(14))
