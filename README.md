@@ -105,6 +105,19 @@ dataset = load_dataset("lex_glue", "scotus")
 
 Furthermore, to make reproducing the results for the already examined models or future models even easier, we release our code in this repository. In folder `/experiments`, there are Python scripts, relying on the [Hugging Face Transformers](https://huggingface.co/transformers/) library, to run and evaluate any Transformer-based model (e.g., BERT, RoBERTa, LegalBERT, and their hierarchical variants, as well as, Longforrmer, and BigBird). We also provide bash scripts in folder `/scripts` to replicate the experiments for each dataset with 5 randoms seeds, as we did for the reported results for the original leaderboard.
 
+Make sure that all required packages are installed:
+
+```
+torch>=1.9.0
+transformers>=4.9.0
+scikit-learn>=0.24.1
+tqdm>=4.61.1
+numpy>=1.20.1
+datasets>=1.12.1
+nltk>=3.5
+scipy>=1.6.3
+```
+
 For example to replicate the results for RoBERTa ([Liu et al., 2019](https://arxiv.org/abs/1907.11692)) on UNFAIR-ToS [Lippi et al. (2019)](https://arxiv.org/abs/1805.01217), you have to configure the relevant bash script (`run_unfair_tos.sh`):
 
 ```
@@ -123,6 +136,19 @@ and then run it:
 > sh run_unfair_tos.sh
 ```
 
+### I don't have the resources to run all these Muppets. What can I do?
+
+You can use Google Colab with GPU acceleration for free online (https://colab.research.google.com). 
+- Set Up a new notebook (https://colab.research.google.com) and git clone the project.
+- Navigate to Edit → Notebook Settings and select GPU from the Hardware Accelerator drop-down. You will probably get assigned with an NVIDIA Tesla K80 12GB.
+- You will also have to decrease the batch size and increase the accumulation steps for hierarchical models.
+
+But, this is an interesting open problem (Efficient NLP), please consider using lighter pre-trained (smaller/faster) models, like: 
+- The smaller [Legal-BERT](https://huggingface.co/nlpaueb/legal-bert-small-uncased) of [Chalkidis et al. (2020)](https://arxiv.org/abs/2010.02559),
+- Smaller [BERT](https://huggingface.co/google/bert_uncased_L-2_H-128_A-2) models of [Turc et al. (2020)](https://arxiv.org/abs/1908.08962),
+- [Mini-LM](https://huggingface.co/microsoft/MiniLM-L12-H384-uncased) of [Wang et al. (2020)](https://arxiv.org/abs/2002.10957),
+
+and report back the results. We are curious!
 
 ### How to participate?
 
