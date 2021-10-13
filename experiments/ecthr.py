@@ -58,16 +58,23 @@ class DataTrainingArguments:
     """
 
     max_seq_length: Optional[int] = field(
-        default=128,
+        default=4096,
         metadata={
             "help": "The maximum total input sequence length after tokenization. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
         },
     )
-    max_seg_length: Optional[int] = field(
+    max_segments: Optional[int] = field(
         default=64,
         metadata={
-            "help": "The maximum total input sequence length after tokenization. Sequences longer "
+            "help": "The maximum number of segments (paragraphs) to be considered. Sequences longer "
+                    "than this will be truncated, sequences shorter will be padded."
+        },
+    )
+    max_seg_length: Optional[int] = field(
+        default=128,
+        metadata={
+            "help": "The maximum segment (paragraph) length to be considered. Segments longer "
                     "than this will be truncated, sequences shorter will be padded."
         },
     )
@@ -319,28 +326,16 @@ def main():
     def preprocess_function(examples):
         # Tokenize the texts
         if model_args.hierarchical:
-            case_template = [[0] * data_args.max_seq_length]
+            case_template = [[0] * data_args.max_seg_length]
             if config.model_type == 'roberta':
                 batch = {'input_ids': [], 'attention_mask': []}
                 for case in examples['text']:
-                    case_encodings = tokenizer(case[:data_args.max_seg_length], padding=padding,
-                                               max_length=data_args.max_seq_length, truncation=True)
+                    case_encodings = tokenizer(case[:data_args.max_segments], padding=padding,
+                                               max_length=data_args.max_seg_length, truncation=True)
                     batch['input_ids'].append(case_encodings['input_ids'] + case_template * (
-                                data_args.max_seg_length - len(case_encodings['input_ids'])))
+                                data_args.max_segments - len(case_encodings['input_ids'])))
                     batch['attention_mask'].append(case_encodings['attention_mask'] + case_template * (
-                                data_args.max_seg_length - len(case_encodings['attention_mask'])))
-            elif config.model_type in ['longformer', 'big_bird']:
-                cases = []
-                max_position_embeddings = config.max_position_embeddings - 2 if config.model_type == 'longformer' \
-                    else config.max_position_embeddings
-                for case in examples['text']:
-                    cases.append(f' {tokenizer.sep_token} '.join([' '.join(fact.split()[:data_args.max_seq_length]) for fact in case[:data_args.max_seg_length]]))
-                batch = tokenizer(cases, padding=padding, max_length=max_position_embeddings, truncation=True)
-                if config.model_type == 'longformer':
-                    global_attention_mask = np.zeros((len(cases), max_position_embeddings), dtype=np.int32)
-                    # global attention on cls token
-                    global_attention_mask[:, 0] = 1
-                    batch['global_attention_mask'] = list(global_attention_mask)
+                                data_args.max_segments - len(case_encodings['attention_mask'])))
             else:
                 batch = {'input_ids': [], 'attention_mask': [], 'token_type_ids': []}
                 for case in examples['text']:
@@ -349,6 +344,19 @@ def main():
                     batch['input_ids'].append(case_encodings['input_ids'] + case_template * (data_args.max_seg_length - len(case_encodings['input_ids'])))
                     batch['attention_mask'].append(case_encodings['attention_mask'] + case_template * (data_args.max_seg_length - len(case_encodings['attention_mask'])))
                     batch['token_type_ids'].append(case_encodings['token_type_ids'] + case_template * (data_args.max_seg_length - len(case_encodings['token_type_ids'])))
+        elif config.model_type in ['longformer', 'big_bird']:
+            cases = []
+            max_position_embeddings = config.max_position_embeddings - 2 if config.model_type == 'longformer' \
+                else config.max_position_embeddings
+            for case in examples['text']:
+                cases.append(f' {tokenizer.sep_token} '.join(
+                    [' '.join(fact.split()[:data_args.max_seg_length]) for fact in case[:data_args.max_segments]]))
+            batch = tokenizer(cases, padding=padding, max_length=max_position_embeddings, truncation=True)
+            if config.model_type == 'longformer':
+                global_attention_mask = np.zeros((len(cases), max_position_embeddings), dtype=np.int32)
+                # global attention on cls token
+                global_attention_mask[:, 0] = 1
+                batch['global_attention_mask'] = list(global_attention_mask)
         else:
             cases = []
             for case in examples['text']:
@@ -407,7 +415,7 @@ def main():
         preds = (expit(logits) > 0.5).astype('int32')
         y_pred = np.zeros((p.label_ids.shape[0], p.label_ids.shape[1] + 1), dtype=np.int32)
         y_pred[:, :-1] = preds
-        y_pred[:, -1] = (np.sum(p.label_ids, axis=1) != 0).astype('int32')
+        y_pred[:, -1] = (np.sum(p.label_ids, axis=1) == 0).astype('int32')
         # Compute scores
         macro_f1 = f1_score(y_true=y_true, y_pred=y_pred, average='macro', zero_division=0)
         micro_f1 = f1_score(y_true=y_true, y_pred=y_pred, average='micro', zero_division=0)

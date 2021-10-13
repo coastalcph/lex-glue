@@ -1,6 +1,5 @@
 from torch import nn
-from transformers import Trainer, is_torch_tpu_available
-from transformers.trainer_utils import PredictionOutput
+from transformers import Trainer
 
 
 class MultilabelTrainer(Trainer):
