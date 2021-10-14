@@ -52,7 +52,7 @@ if is_torch_available():
             overwrite_cache=False,
             mode: Split = Split.train,
         ):
-            dataset = datasets.load_dataset('lex_glue', task, data_dir='data')
+            dataset = datasets.load_dataset('lex_glue', task)
             tokenizer_name = re.sub('[^a-z]+', ' ', tokenizer.name_or_path).title().replace(' ', '')
             cached_features_file = os.path.join(
                 '.cache',
@@ -119,7 +119,7 @@ if is_tf_available():
             overwrite_cache=False,
             mode: Split = Split.train,
         ):
-            dataset = datasets.load_dataset('lex_glue', task, data_dir='data')
+            dataset = datasets.load_dataset('lex_glue')
 
             logger.info(f"Creating features from dataset file at {task}")
             if mode == Split.dev:
@@ -195,17 +195,11 @@ def convert_examples_to_features(
         if ex_index % 10000 == 0:
             logger.info("Writing example %d of %d" % (ex_index, len(examples)))
         choices_inputs = []
-        for ending_idx, (context, ending) in enumerate(zip(example['contexts'], example['endings'])):
-            text_a = context
-            if example['question'].find("_") != -1:
-                # this is for cloze question
-                text_b = example['question'].replace("_", ending)
-            else:
-                text_b = example['question'] + " " + ending
-
+        for ending_idx, ending in enumerate(example['endings']):
+            context = example['context']
             inputs = tokenizer(
-                text_a,
-                text_b,
+                context,
+                ending,
                 add_special_tokens=True,
                 max_length=max_length,
                 padding="max_length",
