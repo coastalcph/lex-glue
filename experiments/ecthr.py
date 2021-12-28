@@ -233,13 +233,13 @@ def main():
     # download the dataset.
     # Downloading and loading eurlex dataset from the hub.
     if training_args.do_train:
-        train_dataset = load_dataset("lex_glue", name=data_args.task, split="train", cache_dir=model_args.cache_dir)
+        train_dataset = load_dataset("lex_glue", name=data_args.task, split="train", data_dir='data', cache_dir=model_args.cache_dir)
 
     if training_args.do_eval:
-        eval_dataset = load_dataset("lex_glue", name=data_args.task, split="validation", cache_dir=model_args.cache_dir)
+        eval_dataset = load_dataset("lex_glue", name=data_args.task, split="validation", data_dir='data', cache_dir=model_args.cache_dir)
 
     if training_args.do_predict:
-        predict_dataset = load_dataset("lex_glue", name=data_args.task, split="test", cache_dir=model_args.cache_dir)
+        predict_dataset = load_dataset("lex_glue", name=data_args.task, split="test", data_dir='data', cache_dir=model_args.cache_dir)
 
     # Labels
     label_list = list(range(10))
@@ -340,10 +340,13 @@ def main():
                 batch = {'input_ids': [], 'attention_mask': [], 'token_type_ids': []}
                 for case in examples['text']:
                     case_encodings = tokenizer(case[:data_args.max_seg_length], padding=padding,
-                                               max_length=data_args.max_seq_length, truncation=True)
-                    batch['input_ids'].append(case_encodings['input_ids'] + case_template * (data_args.max_seg_length - len(case_encodings['input_ids'])))
-                    batch['attention_mask'].append(case_encodings['attention_mask'] + case_template * (data_args.max_seg_length - len(case_encodings['attention_mask'])))
-                    batch['token_type_ids'].append(case_encodings['token_type_ids'] + case_template * (data_args.max_seg_length - len(case_encodings['token_type_ids'])))
+                                               max_length=data_args.max_seg_length, truncation=True)
+                    batch['input_ids'].append(case_encodings['input_ids'] + case_template * (
+                            data_args.max_seg_length - len(case_encodings['input_ids'])))
+                    batch['attention_mask'].append(case_encodings['attention_mask'] + case_template * (
+                            data_args.max_seg_length - len(case_encodings['attention_mask'])))
+                    batch['token_type_ids'].append(case_encodings['token_type_ids'] + case_template * (
+                            data_args.max_seg_length - len(case_encodings['token_type_ids'])))
         elif config.model_type in ['longformer', 'big_bird']:
             cases = []
             max_position_embeddings = config.max_position_embeddings - 2 if config.model_type == 'longformer' \
