@@ -64,6 +64,13 @@ class DataTrainingArguments:
                     "than this will be truncated, sequences shorter will be padded."
         },
     )
+    max_segments: Optional[int] = field(
+        default=64,
+        metadata={
+            "help": "The maximum number of segments (paragraphs) to be considered. Sequences longer "
+                    "than this will be truncated, sequences shorter will be padded."
+        },
+    )
     max_seg_length: Optional[int] = field(
         default=64,
         metadata={
@@ -277,8 +284,8 @@ def main():
             else:
                 segment_encoder = model.deberta
             model_encoder = HierarchicalBert(encoder=segment_encoder,
-                                             max_segments=data_args.max_seg_length,
-                                             max_segment_length=data_args.max_seq_length)
+                                             max_segments=data_args.max_segments,
+                                             max_segment_length=data_args.max_seg_length)
             if config.model_type == 'bert':
                 model.bert = model_encoder
             elif config.model_type == 'deberta':
@@ -286,8 +293,8 @@ def main():
             else:
                 raise NotImplementedError(f"{config.model_type} is no supported yet!")
         elif config.model_type == 'roberta':
-            model_encoder = HierarchicalBert(encoder=model.roberta, max_segments=data_args.max_seg_length,
-                                             max_segment_length=data_args.max_seq_length)
+            model_encoder = HierarchicalBert(encoder=model.roberta, max_segments=data_args.max_segments,
+                                             max_segment_length=data_args.max_seg_length)
             model.roberta = model_encoder
             # Build a new classification layer, as well
             dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -317,24 +324,24 @@ def main():
                 batch = {'input_ids': [], 'attention_mask': []}
                 for doc in examples['text']:
                     doc = re.split('\n{2,}', doc)
-                    doc_encodings = tokenizer(doc[:data_args.max_seg_length], padding=padding,
-                                              max_length=data_args.max_seq_length, truncation=True)
+                    doc_encodings = tokenizer(doc[:data_args.max_segments], padding=padding,
+                                              max_length=data_args.max_seg_length, truncation=True)
                     batch['input_ids'].append(doc_encodings['input_ids'] + case_template * (
-                            data_args.max_seg_length - len(doc_encodings['input_ids'])))
+                            data_args.max_segments - len(doc_encodings['input_ids'])))
                     batch['attention_mask'].append(doc_encodings['attention_mask'] + case_template * (
-                            data_args.max_seg_length - len(doc_encodings['attention_mask'])))
+                            data_args.max_segments - len(doc_encodings['attention_mask'])))
             else:
                 batch = {'input_ids': [], 'attention_mask': [], 'token_type_ids': []}
                 for doc in examples['text']:
                     doc = re.split('\n{2,}', doc)
                     doc_encodings = tokenizer(doc[:data_args.max_seg_length], padding=padding,
-                                              max_length=data_args.max_seq_length, truncation=True)
+                                              max_length=data_args.max_seg_length, truncation=True)
                     batch['input_ids'].append(doc_encodings['input_ids'] + case_template * (
-                                data_args.max_seg_length - len(doc_encodings['input_ids'])))
+                                data_args.max_segments - len(doc_encodings['input_ids'])))
                     batch['attention_mask'].append(doc_encodings['attention_mask'] + case_template * (
-                                data_args.max_seg_length - len(doc_encodings['attention_mask'])))
+                                data_args.max_segments - len(doc_encodings['attention_mask'])))
                     batch['token_type_ids'].append(doc_encodings['token_type_ids'] + case_template * (
-                                data_args.max_seg_length - len(doc_encodings['token_type_ids'])))
+                                data_args.max_segments - len(doc_encodings['token_type_ids'])))
         elif config.model_type in ['longformer', 'big_bird']:
             cases = []
             max_position_embeddings = config.max_position_embeddings - 2 if config.model_type == 'longformer' \
@@ -342,7 +349,7 @@ def main():
             for doc in examples['text']:
                 doc = re.split('\n{2,}', doc)
                 cases.append(f' {tokenizer.sep_token} '.join([' '.join(paragraph.split()[:data_args.max_seq_length])
-                                                              for paragraph in doc[:data_args.max_seg_length]]))
+                                                              for paragraph in doc[:data_args.max_segments]]))
             batch = tokenizer(cases, padding=padding, max_length=max_position_embeddings, truncation=True)
             if config.model_type == 'longformer':
                 global_attention_mask = np.zeros((len(cases), max_position_embeddings), dtype=np.int32)

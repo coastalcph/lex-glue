@@ -291,8 +291,8 @@ def main():
             else:
                 segment_encoder = model.deberta
             model_encoder = HierarchicalBert(encoder=segment_encoder,
-                                             max_segments=data_args.max_seg_length,
-                                             max_segment_length=data_args.max_seq_length)
+                                             max_segments=data_args.max_segments,
+                                             max_segment_length=data_args.max_seg_length)
             if config.model_type == 'bert':
                 model.bert = model_encoder
             elif config.model_type == 'deberta':
@@ -300,8 +300,8 @@ def main():
             else:
                 raise NotImplementedError(f"{config.model_type} is no supported yet!")
         elif config.model_type == 'roberta':
-            model_encoder = HierarchicalBert(encoder=model.roberta, max_segments=data_args.max_seg_length,
-                                             max_segment_length=data_args.max_seq_length)
+            model_encoder = HierarchicalBert(encoder=model.roberta, max_segments=data_args.max_segments,
+                                             max_segment_length=data_args.max_seg_length)
             model.roberta = model_encoder
             # Build a new classification layer, as well
             dense = nn.Linear(config.hidden_size, config.hidden_size)
@@ -339,14 +339,14 @@ def main():
             else:
                 batch = {'input_ids': [], 'attention_mask': [], 'token_type_ids': []}
                 for case in examples['text']:
-                    case_encodings = tokenizer(case[:data_args.max_seg_length], padding=padding,
+                    case_encodings = tokenizer(case[:data_args.max_segments], padding=padding,
                                                max_length=data_args.max_seg_length, truncation=True)
                     batch['input_ids'].append(case_encodings['input_ids'] + case_template * (
-                            data_args.max_seg_length - len(case_encodings['input_ids'])))
+                            data_args.max_segments - len(case_encodings['input_ids'])))
                     batch['attention_mask'].append(case_encodings['attention_mask'] + case_template * (
-                            data_args.max_seg_length - len(case_encodings['attention_mask'])))
+                            data_args.max_segments - len(case_encodings['attention_mask'])))
                     batch['token_type_ids'].append(case_encodings['token_type_ids'] + case_template * (
-                            data_args.max_seg_length - len(case_encodings['token_type_ids'])))
+                            data_args.max_segments - len(case_encodings['token_type_ids'])))
         elif config.model_type in ['longformer', 'big_bird']:
             cases = []
             max_position_embeddings = config.max_position_embeddings - 2 if config.model_type == 'longformer' \
