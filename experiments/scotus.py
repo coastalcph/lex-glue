@@ -334,7 +334,7 @@ def main():
                 batch = {'input_ids': [], 'attention_mask': [], 'token_type_ids': []}
                 for doc in examples['text']:
                     doc = re.split('\n{2,}', doc)
-                    doc_encodings = tokenizer(doc[:data_args.max_seg_length], padding=padding,
+                    doc_encodings = tokenizer(doc[:data_args.max_segments], padding=padding,
                                               max_length=data_args.max_seg_length, truncation=True)
                     batch['input_ids'].append(doc_encodings['input_ids'] + case_template * (
                                 data_args.max_segments - len(doc_encodings['input_ids'])))
@@ -348,7 +348,7 @@ def main():
                 else config.max_position_embeddings
             for doc in examples['text']:
                 doc = re.split('\n{2,}', doc)
-                cases.append(f' {tokenizer.sep_token} '.join([' '.join(paragraph.split()[:data_args.max_seq_length])
+                cases.append(f' {tokenizer.sep_token} '.join([' '.join(paragraph.split()[:data_args.max_seg_length])
                                                               for paragraph in doc[:data_args.max_segments]]))
             batch = tokenizer(cases, padding=padding, max_length=max_position_embeddings, truncation=True)
             if config.model_type == 'longformer':
