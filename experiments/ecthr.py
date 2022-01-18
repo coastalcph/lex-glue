@@ -418,7 +418,7 @@ def main():
         preds = (expit(logits) > 0.5).astype('int32')
         y_pred = np.zeros((p.label_ids.shape[0], p.label_ids.shape[1] + 1), dtype=np.int32)
         y_pred[:, :-1] = preds
-        y_pred[:, -1] = (np.sum(p.label_ids, axis=1) == 0).astype('int32')
+        y_pred[:, -1] = (np.sum(preds, axis=1) == 0).astype('int32')
         # Compute scores
         macro_f1 = f1_score(y_true=y_true, y_pred=y_pred, average='macro', zero_division=0)
         micro_f1 = f1_score(y_true=y_true, y_pred=y_pred, average='micro', zero_division=0)
