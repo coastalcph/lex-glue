@@ -193,6 +193,10 @@ We are currently still lacking some technical infrastructure, e.g., an integrate
 
 In the mean-time, we ask participants to re-use and expand our code to submit new results, if possible, and open a new discussion (submission) in our repository (https://github.com/coastalcph/lex-glue/discussions/new?category=new-results) presenting their results, providing the auto-generated result logs and the relevant publication (or pre-print), if available, accompanied with a pull request including the code amendments that are needed to reproduce their experiments. Upon reviewing your results, we'll update the public leaderboard accordingly.
 
+### I want to re-load fine-tuned HierBERT models. How can I do this?
+
+You can re-load fine-tuned HierBERT models following our example python script ["Re-load HierBERT models"](https://github.com/coastalcph/lex-glue/blob/main/utils/load_hierbert.py).
+
 ### I still have open questions...
 
 Please post your question on [Discussions](https://github.com/coastalcph/lex-glue/discussions) section or communicate with the corresponding author via e-mail.
