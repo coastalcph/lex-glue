@@ -162,7 +162,7 @@ def main():
 		model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
 		cache_dir=model_args.cache_dir,
 		# Default fast tokenizer is buggy on CaseHOLD task, switch to legacy tokenizer
-		use_fast=False,
+		use_fast=True,
 	)
 
 	if config.model_type != 'deberta':
