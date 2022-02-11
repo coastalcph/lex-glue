@@ -128,7 +128,7 @@ if is_tf_available():
                 examples = dataset['test']
             else:
                 examples = dataset['train']
-            logger.info("Training examples: %s", len(examples))
+            logger.info(f"{mode.name.title()} examples: %s", len(examples))
 
             self.features = convert_examples_to_features(
                 examples,
