@@ -16,18 +16,16 @@ If you participate, use the LexGLUE benchmark, or our experimentation library, p
 
 [*Ilias Chalkidis, Abhik Jana, Dirk Hartung, Michael Bommarito, Ion Androutsopoulos, Daniel Martin Katz, and Nikolaos Aletras.*
 *LexGLUE: A Benchmark Dataset for Legal Language Understanding in English.*
-*2021. arXiv: 2110.00976.*](https://arxiv.org/abs/2110.00976)
+*2022. In the Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics. Dublin, Ireland.*](https://arxiv.org/abs/2110.00976)
 ```
-@article{chalkidis-etal-2021-lexglue,
+@inproceedings{chalkidis-etal-2021-lexglue,
         title={LexGLUE: A Benchmark Dataset for Legal Language Understanding in English}, 
         author={Chalkidis, Ilias and Jana, Abhik and Hartung, Dirk and
         Bommarito, Michael and Androutsopoulos, Ion and Katz, Daniel Martin and
         Aletras, Nikolaos},
-        year={2021},
-        eprint={2110.00976},
-        archivePrefix={arXiv},
-        primaryClass={cs.CL},
-        note = {arXiv: 2110.00976},
+        year={2022},
+        booktitle={Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics},
+        address={Dubln, Ireland},
 }
 ```
 
@@ -76,36 +74,65 @@ The CaseHOLD (Case Holdings on Legal Decisions) dataset includes multiple choice
 
 ## Leaderboard
 
-### Medium-sized (:man:) Models [1]
+### Averaged LexGLUE Scores
+
+We report the arithmetic, harmonic, and geometric mean across tasks following [Shavrina and Malykh (2021)](https://openreview.net/pdf?id=PPGfoNJnLKd). We acknowledge that the use of scores aggregated over tasks has been criticized in general NLU benchmarks (e.g., GLUE), as models are trained with different numbers of samples, task complexity, and evaluation metrics per task. We believe that the use of a standard common metric (F1) across tasks and averaging with harmonic mean alleviate this issue.
+
+<table>
+<tr><td><b>Averaging</b></td><td><b>Arithmetic</b></td><td><b>Harmonic</b></td><td><b>Geometric</b></td></tr>
+<tr><td><b>Model</b></td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td></tr>
+<tr><td>BERT</td><td> 77.8 /  69.5 </td><td> 76.7 /  68.2 </td><td> 77.2 /  68.8 </td></tr>
+<tr><td>RoBERTa</td><td> 77.8 /  68.7 </td><td> 76.8 /  67.5 </td><td> 77.3 /  68.1 </td></tr>
+<tr><td>RoBERTa (Large)</td><td> 79.4 /  70.8 </td><td> 78.4 /  69.1 </td><td> 78.9 /  70.0 </td></tr>
+<tr><td>DeBERTa</td><td> 78.3 /  69.7 </td><td> 77.4 /  68.5 </td><td> 77.8 /  69.1 </td></tr>
+<tr><td>Longformer</td><td> 78.5 /  70.5 </td><td> 77.5 /  69.5 </td><td> 78.0 /  70.0 </td></tr>
+<tr><td>BigBird</td><td> 78.2 /  69.6 </td><td> 77.2 /  68.5 </td><td> 77.7 /  69.0 </td></tr>
+<tr><td>Legal-BERT</td><td> 79.8 /  72.0 </td><td> 78.9 /  70.8 </td><td> 79.3 /  71.4 </td></tr>
+<tr><td>CaseLaw-BERT</td><td> 79.4 /  70.9 </td><td> 78.5 /  69.7 </td><td> 78.9 /  70.3 </td></tr>
+</table>
+
+### Task-wise LexGLUE scores
+
+#### Large-sized (:older_man:) Models [1]
+
+<table>
+        <tr><td><b>Dataset</b></td><td><b>ECtHR A</b></td><td><b>ECtHR B</b></td><td><b>SCOTUS</b></td><td><b>EUR-LEX</b></td><td><b>LEDGAR</b></td><td><b>UNFAIR-ToS</b></td><td><b>CaseHOLD</b></td></tr>
+<tr><td><b>Model</b></td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1</td><td>μ-F1 / m-F1  </td></tr>
+<tr><td>RoBERTa</td> <td> 73.8 /  67.6 </td> <td> 79.8 /  71.6 </td> <td> 67.9 /  50.3 </td> <td> 75.5 /  66.3 </td> <td> 88.6 /  83.6 </td> <td> 95.8 /  81.6 </td> <td> 74.4 </td> </tr>
+</table>
+
+[1] Results reported by [Chalkidis et al. (2021)](https://arxiv.org/abs/2110.00976). All large-sized transformer-based models follow the same specifications (L=24, H=1024, A=18).
+
+#### Medium-sized (:man:) Models [2]
 
 <table>
         <tr><td><b>Dataset</b></td><td><b>ECtHR A</b></td><td><b>ECtHR B</b></td><td><b>SCOTUS</b></td><td><b>EUR-LEX</b></td><td><b>LEDGAR</b></td><td><b>UNFAIR-ToS</b></td><td><b>CaseHOLD</b></td></tr>
 <tr><td><b>Model</b></td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1</td><td>μ-F1 / m-F1  </td></tr>
 <tr><td>TFIDF+SVM</td><td> 64.7 / 51.7  </td><td>74.6 / 65.1 </td><td> <b>78.2</b> / <b>69.5</b> </td><td>71.3  / 51.4 </td><td>87.2   / 82.4 </td><td>95.4  / 78.8</td><td>n/a   </td></tr>
-<tr><td> BERT </td><td> 71.4  / 64.0  </td><td>79.6  / <b>78.3</b> </td><td>70.5   / 60.9 </td><td>71.6  / 55.6 </td><td>87.7   / 82.2 </td><td>97.3  / 80.4</td><td>70.7   </td></tr>
-<tr><td>RoBERTa </td><td>69.5  / 60.7 </td><td>78.6  / 77.0 </td><td>70.8   / 61.2 </td><td>71.8  / <b>57.5</b> </td><td>87.9  /  82.1 </td><td>97.2 / 79.6</td><td>71.7 </td></tr>
-  <tr><td>DeBERTa </td><td>69.1   / 61.2 </td><td>79.9   / <b>78.3</b> </td><td>70.0  / 60.0 </td><td> <b>72.3</b> / <b>57.2</b> </td><td>87.9   / 82.0 </td><td>97.2 / 80.2</td><td>72.1  </td></tr>
-<tr><td>Longformer </td><td>69.6  / 62.4 </td><td>78.8  / 75.8 </td><td>72.2  / 62.5 </td><td>71.9  / 56.7 </td><td>87.7  / 82.3 </td><td><b>97.5</b> / 81.0</td><td>72.0  </td></tr>
-<tr><td>BigBird </td><td>70.5  / 63.8 </td><td> 79.9  / 76.9 </td><td>71.7  / 61.4 </td><td>71.8  / 56.6 </td><td>87.7 / 82.1 </td><td>97.4 / 81.1</td><td>70.4  </td></tr>
- <tr><td>Legal-BERT </td><td><b>71.2</b>  / <b>64.6</b> </td><td><b>80.6</b>  / 77.2 </td><td>76.2  / 65.8 </td><td>72.2  / 56.2 </td><td><b>88.1</b>  / <b>82.7</b></td><td> 97.4  / <b>83.4</b></td><td>75.1</td></tr>
-<tr><td>CaseLaw-BERT </td><td><b>71.2</b>   / 64.2 </td><td>79.7   / 76.8 </td><td>76.4 / 66.2 </td><td>71.0  / 55.9 </td><td>88.0  / 82.3</td><td>97.4  / 82.4</td><td><b>75.6</b>  </td></tr>
+        <tr><td>BERT</td> <td> <b>71.2</b> /  63.6 </td> <td> 79.7 /  73.4 </td> <td> 71.4 /  57.2 </td> <td> 68.3 /  58.3 </td> <td> 87.6 /  81.8 </td> <td> 95.6 /  81.3 </td> <td> 70.8 </td> </tr>
+<tr><td>RoBERTa</td> <td> 69.2 /  59.0 </td> <td> 77.3 /  68.9 </td> <td> 71.9 /  <b>57.9</b> </td> <td> 71.6 /  62.0 </td> <td> 87.9 /  82.3 </td> <td> 95.2 /  79.2 </td> <td> 71.4 </td> </tr>
+<tr><td>DeBERTa</td> <td> 70.0 /  60.8 </td> <td> 78.8 /  71.0 </td> <td> <b>72.1</b> /  57.4 </td> <td> 71.1 /  62.7 </td> <td> 88.2 /  <b>83.1</b> </td> <td> 95.5 /  80.3 </td> <td> 72.6 </td> </tr>
+<tr><td>Longformer</td> <td> 69.9 /  <b>64.7</b> </td> <td> 79.4 /  71.7 </td> <td> 71.6 /  57.7 </td> <td> 72.9 /  64.0 </td> <td> 88.2 /  83.0 </td> <td> 95.5 /  80.9 </td> <td> 71.9 </td> </tr>
+<tr><td>BigBird</td> <td> 70.0 /  62.9 </td> <td> 78.8 /  70.9 </td> <td> 71.5 /  56.8 </td> <td> 72.8 /  62.0 </td> <td> 87.8 /  82.6 </td> <td> 95.7 /  81.3 </td> <td> 70.8 </td> </tr>
+<tr><td>Legal-BERT</td> <td> 70.0 /  64.0 </td> <td> <b>80.4</b> /  <b>74.7</b> </td> <td> <b>72.1</b> /  57.4 </td> <td> 76.4 /  66.5 </td> <td> 88.2 /  83.0 </td> <td> <b>96.0</b> /  <b>83.0</b> </td> <td> 75.3 </td> </tr>
+<tr><td>CaseLaw-BERT</td> <td> 69.8 /  62.9 </td> <td> 78.8 /  70.3 </td> <td> 70.7 /  56.6 </td> <td> 76.6 /  65.9 </td> <td> <b>88.3</b> /  83.0 </td> <td> <b>96.0</b> /  82.3 </td> <td> <b>75.4</b> </td> </tr>
 </table>
 
-[1] Results reported by [Chalkidis et al. (2021)](https://arxiv.org/abs/2110.00976). All transformer-based models follow the same specifications (L=12, H=768, A=12).
+[2] Results reported by [Chalkidis et al. (2021)](https://arxiv.org/abs/2110.00976). All medium-sized transformer-based models follow the same specifications (L=12, H=768, A=12).
 
-### Small-sized (:baby:) Models [2]
+#### Small-sized (:baby:) Models [3]
 
 <table>
 <tr><td><b>Dataset</b></td><td><b>ECtHR A</b></td><td><b>ECtHR B</b></td><td><b>SCOTUS</b></td><td><b>EUR-LEX</b></td><td><b>LEDGAR</b></td><td><b>UNFAIR-ToS</b></td><td><b>CaseHOLD</b></td></tr>
         <tr><td><b>Model</b></td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1</td><td>μ-F1 / m-F1  </td></tr>
-<tr><td>BERT-Tiny</td><td>66.2 / 43.9</td><td>	66.3 / 54.1</td><td>	62.8 / 40.9</td><td>	65.5 / 27.5</td><td>	83.9 / 74.7</td><td>	94.3 / 11.1</td><td>	68.3</td></tr>
-<tr><td>Mini-LM (v2)</td><td>67.9 / 55.1</td><td>	66.6 / 61.0</td><td>	60.8 / 45.5</td><td>	62.2 / 35.6</td><td>	86.7 / 79.6</td><td>	93.9 / 13.2</td><td>	71.3</td></tr>
-<tr><td>Distil-BERT</td><td>69.9 / 61.1</td><td>	70.5 / 69.1</td><td>	67.0 / 55.9</td><td>	66.0 / 51.5</td><td>	87.5 / <b>81.5</b></td><td>	<b>97.1</b> / <b>79.4</b></td><td>	68.6</td>
-<tr><td>Legal-BERT </td><td><b>72.8</b> / <b>65.9</b></td><td><b>73.7</b> / <b>73.3</b></td><td><b>75.6</b> / <b>68.5</b></td><td> <b>73.4</b> / <b>54.4</b><td><b>87.8</b> /81.4</td><td><b>97.1</b> / 76.3</td><td><b>74.7</b></td></tr>
+<tr><td>BERT-Tiny</td><td>n/a</td><td>n/a</td><td>	62.8 / 40.9</td><td>	65.5 / 27.5</td><td>	83.9 / 74.7</td><td>	94.3 / 11.1</td><td>	68.3</td></tr>
+<tr><td>Mini-LM (v2)</td><td>n/a</td><td>n/a</td><td>	60.8 / 45.5</td><td>	62.2 / 35.6</td><td>	86.7 / 79.6</td><td>	93.9 / 13.2</td><td>	71.3</td></tr>
+<tr><td>Distil-BERT</td><td>n/a</td><td>n/a</td><td>	67.0 / 55.9</td><td>	66.0 / 51.5</td><td>	87.5 / <b>81.5</b></td><td>	<b>97.1</b> / <b>79.4</b></td><td>	68.6</td>
+<tr><td>Legal-BERT </td><td>n/a</b></td><td>n/a</td><td><b>75.6</b> / <b>68.5</b></td><td> <b>73.4</b> / <b>54.4</b><td><b>87.8</b> /81.4</td><td><b>97.1</b> / 76.3</td><td><b>74.7</b></td></tr>
 
 </table>
 
-[2] Results reported by Atreya Shankar ([@atreyasha](https://github.com/atreyasha)) :hugs: :partying_face:. More details (e.g., validation scores, log files) are provided [here](https://github.com/coastalcph/lex-glue/discussions/categories/new-results). The small-sized models' specifications are:
+[3] Results reported by Atreya Shankar ([@atreyasha](https://github.com/atreyasha)) :hugs: :partying_face:. More details (e.g., validation scores, log files) are provided [here](https://github.com/coastalcph/lex-glue/discussions/categories/new-results). The small-sized models' specifications are:
 
 * BERT-Tiny (L=2, H=128, A=2) by [Turc et al. (2020)](https://arxiv.org/abs/1908.08962)
 * Mini-LM (v2) (L=12, H=386, A=12) by [Wang et al. (2020)](https://arxiv.org/abs/2002.10957)
@@ -175,7 +202,7 @@ But, this is an interesting open problem (Efficient NLP), please consider using 
 - Smaller [BERT](https://huggingface.co/google/bert_uncased_L-2_H-128_A-2) models of [Turc et al. (2020)](https://arxiv.org/abs/1908.08962),
 - [Mini-LM](https://huggingface.co/microsoft/MiniLM-L12-H384-uncased) of [Wang et al. (2020)](https://arxiv.org/abs/2002.10957),
 
-, or non transformer-bases neural models, like:
+, or non transformer-based neural models, like:
 
 - LSTM-based [(Hochreiter and Schmidhuber, 1997)](https://dl.acm.org/doi/10.1162/neco.1997.9.8.1735) models, like the Hierarchical Attention Network (HAN) of [Yang et al. (2016)](https://aclanthology.org/N16-1174/),
 - Graph-based models, like the Graph Attention Network (GAT) of [Veličković et al. (2017)](https://arxiv.org/abs/1710.10903)
