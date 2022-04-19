@@ -87,7 +87,7 @@ We report the arithmetic, harmonic, and geometric mean across tasks following [S
 <tr><td>DeBERTa</td><td> 78.3 /  69.7 </td><td> 77.4 /  68.5 </td><td> 77.8 /  69.1 </td></tr>
 <tr><td>Longformer</td><td> 78.5 /  70.5 </td><td> 77.5 /  69.5 </td><td> 78.0 /  70.0 </td></tr>
 <tr><td>BigBird</td><td> 78.2 /  69.6 </td><td> 77.2 /  68.5 </td><td> 77.7 /  69.0 </td></tr>
-<tr><td>Legal-BERT</td><td> 79.8 /  72.0 </td><td> 78.9 /  70.8 </td><td> 79.3 /  71.4 </td></tr>
+<tr><td>Legal-BERT</td><td> <b>79.8</b> /  <b>72.0</b> </td><td> <b>78.9</b> /  <b>70.8</b> </td><td> <b>79.3</b> /  <b>71.4</b> </td></tr>
 <tr><td>CaseLaw-BERT</td><td> 79.4 /  70.9 </td><td> 78.5 /  69.7 </td><td> 78.9 /  70.3 </td></tr>
 </table>
 
@@ -98,7 +98,7 @@ We report the arithmetic, harmonic, and geometric mean across tasks following [S
 <table>
         <tr><td><b>Dataset</b></td><td><b>ECtHR A</b></td><td><b>ECtHR B</b></td><td><b>SCOTUS</b></td><td><b>EUR-LEX</b></td><td><b>LEDGAR</b></td><td><b>UNFAIR-ToS</b></td><td><b>CaseHOLD</b></td></tr>
 <tr><td><b>Model</b></td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1</td><td>μ-F1 / m-F1  </td></tr>
-<tr><td>RoBERTa</td> <td> 73.8 /  67.6 </td> <td> 79.8 /  71.6 </td> <td> 67.9 /  50.3 </td> <td> 75.5 /  66.3 </td> <td> 88.6 /  83.6 </td> <td> 95.8 /  81.6 </td> <td> 74.4 </td> </tr>
+<tr><td>RoBERTa</td> <td> 73.8 /  67.6 </td> <td> 79.8 /  71.6 </td> <td> 75.5 /  66.3 </td> <td> 67.9 /  50.3 </td> <td> 88.6 /  83.6 </td> <td> 95.8 /  81.6 </td> <td> 74.4 </td> </tr>
 </table>
 
 [1] Results reported by [Chalkidis et al. (2021)](https://arxiv.org/abs/2110.00976). All large-sized transformer-based models follow the same specifications (L=24, H=1024, A=18).
@@ -109,13 +109,14 @@ We report the arithmetic, harmonic, and geometric mean across tasks following [S
         <tr><td><b>Dataset</b></td><td><b>ECtHR A</b></td><td><b>ECtHR B</b></td><td><b>SCOTUS</b></td><td><b>EUR-LEX</b></td><td><b>LEDGAR</b></td><td><b>UNFAIR-ToS</b></td><td><b>CaseHOLD</b></td></tr>
 <tr><td><b>Model</b></td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1</td><td>μ-F1 / m-F1  </td></tr>
 <tr><td>TFIDF+SVM</td><td> 64.7 / 51.7  </td><td>74.6 / 65.1 </td><td> <b>78.2</b> / <b>69.5</b> </td><td>71.3  / 51.4 </td><td>87.2   / 82.4 </td><td>95.4  / 78.8</td><td>n/a   </td></tr>
-        <tr><td>BERT</td> <td> <b>71.2</b> /  63.6 </td> <td> 79.7 /  73.4 </td> <td> 71.4 /  57.2 </td> <td> 68.3 /  58.3 </td> <td> 87.6 /  81.8 </td> <td> 95.6 /  81.3 </td> <td> 70.8 </td> </tr>
-<tr><td>RoBERTa</td> <td> 69.2 /  59.0 </td> <td> 77.3 /  68.9 </td> <td> 71.9 /  <b>57.9</b> </td> <td> 71.6 /  62.0 </td> <td> 87.9 /  82.3 </td> <td> 95.2 /  79.2 </td> <td> 71.4 </td> </tr>
-<tr><td>DeBERTa</td> <td> 70.0 /  60.8 </td> <td> 78.8 /  71.0 </td> <td> <b>72.1</b> /  57.4 </td> <td> 71.1 /  62.7 </td> <td> 88.2 /  <b>83.1</b> </td> <td> 95.5 /  80.3 </td> <td> 72.6 </td> </tr>
-<tr><td>Longformer</td> <td> 69.9 /  <b>64.7</b> </td> <td> 79.4 /  71.7 </td> <td> 71.6 /  57.7 </td> <td> 72.9 /  64.0 </td> <td> 88.2 /  83.0 </td> <td> 95.5 /  80.9 </td> <td> 71.9 </td> </tr>
-<tr><td>BigBird</td> <td> 70.0 /  62.9 </td> <td> 78.8 /  70.9 </td> <td> 71.5 /  56.8 </td> <td> 72.8 /  62.0 </td> <td> 87.8 /  82.6 </td> <td> 95.7 /  81.3 </td> <td> 70.8 </td> </tr>
-<tr><td>Legal-BERT</td> <td> 70.0 /  64.0 </td> <td> <b>80.4</b> /  <b>74.7</b> </td> <td> <b>72.1</b> /  57.4 </td> <td> 76.4 /  66.5 </td> <td> 88.2 /  83.0 </td> <td> <b>96.0</b> /  <b>83.0</b> </td> <td> 75.3 </td> </tr>
-<tr><td>CaseLaw-BERT</td> <td> 69.8 /  62.9 </td> <td> 78.8 /  70.3 </td> <td> 70.7 /  56.6 </td> <td> 76.6 /  65.9 </td> <td> <b>88.3</b> /  83.0 </td> <td> <b>96.0</b> /  82.3 </td> <td> <b>75.4</b> </td> </tr>
+<td>BERT</td> <td> <b>71.2</b> /  63.6 </td> <td> 79.7 /  73.4 </td> <td> 68.3 /  58.3 </td> <td> 71.4 /  57.2 </td> <td> 87.6 /  81.8 </td> <td> 95.6 /  81.3 </td> <td> 70.8 </td> </tr>
+<td>RoBERTa</td> <td> 69.2 /  59.0 </td> <td> 77.3 /  68.9 </td> <td> 71.6 /  62.0 </td> <td> 71.9 /  <b>57.9</b> </td> <td> 87.9 /  82.3 </td> <td> 95.2 /  79.2 </td> <td> 71.4 </td> </tr>
+<td>DeBERTa</td> <td> 70.0 /  60.8 </td> <td> 78.8 /  71.0 </td> <td> 71.1 /  62.7 </td> <td> <b>72.1</b> /  57.4 </td> <td> 88.2 /  <b>83.1</b> </td> <td> 95.5 /  80.3 </td> <td> 72.6 </td> </tr>
+<td>Longformer</td> <td> 69.9 /  <b>64.7</b> </td> <td> 79.4 /  71.7 </td> <td> 72.9 /  64.0 </td> <td> 71.6 /  57.7 </td> <td> 88.2 /  83.0 </td> <td> 95.5 /  80.9 </td> <td> 71.9 </td> </tr>
+<td>BigBird</td> <td> 70.0 /  62.9 </td> <td> 78.8 /  70.9 </td> <td> 72.8 /  62.0 </td> <td> 71.5 /  56.8 </td> <td> 87.8 /  82.6 </td> <td> 95.7 /  81.3 </td> <td> 70.8 </td> </tr>
+<td>Legal-BERT</td> <td> 70.0 /  64.0 </td> <td> <b>80.4</b> /  <b>74.7</b> </td> <td> 76.4 /  66.5 </td> <td> <b>72.1</b> /  57.4 </td> <td> 88.2 /  83.0 </td> <td> <b>96.0</b> /  <b>83.0</b> </td> <td> 75.3 </td> </tr>
+<td>CaseLaw-BERT</td> <td> 69.8 /  62.9 </td> <td> 78.8 /  70.3 </td> <td> 76.6 /  65.9 </td> <td> 70.7 /  56.6 </td> <td> <b>88.3</b> /  83.0 </td> <td> <b>96.0</b> /  82.3 </td> <td> <b>75.4</b> </td> </tr>
+
 </table>
 
 [2] Results reported by [Chalkidis et al. (2021)](https://arxiv.org/abs/2110.00976). All medium-sized transformer-based models follow the same specifications (L=12, H=768, A=12).
