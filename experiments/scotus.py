@@ -72,7 +72,7 @@ class DataTrainingArguments:
         },
     )
     max_seg_length: Optional[int] = field(
-        default=64,
+        default=128,
         metadata={
             "help": "The maximum total input sequence length after tokenization. Sequences longer "
                     "than this will be truncated, sequences shorter will be padded."
