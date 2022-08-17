@@ -191,6 +191,10 @@ and then run it:
 > sh run_unfair_tos.sh
 ```
 
+**Note:**  The bash scripts make use of two HF arguments/parameters (`--fp16`, `--fp16_full_eval`), which are only applicable (working) when there are available (and correctly configured) NVIDIA GPUs in a machine station (server or cluster), while also `torch` is correctly configured to use these compute resources.
+
+So, in case you don't have such resources, just delete these two arguments from the scripts to train models with standard `fp32` precision. In case you have such resources, make sure to correctly install the NVIDIA CUDA drivers, and also correctly install `torch` to identify these resources (Consider this page to figure out the appropriate steps: https://pytorch.org/get-started/locally/)
+
 ### I don't have the resources to run all these Muppets. What can I do?
 
 You can use Google Colab with GPU acceleration for free online (https://colab.research.google.com). 
