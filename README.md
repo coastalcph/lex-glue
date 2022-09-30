@@ -3,40 +3,19 @@
 ![LexGLUE Graphic](https://repository-images.githubusercontent.com/411072132/5c49b313-ab36-4391-b785-40d9478d0f73)
 
 
-## :mega: :rotating_light: Important Notice related to the EUR-LEX dataset :bug: :point_left:
+## :mega: :rotating_light: Important Notice related to the EUR-LEX dataset (Fixed) :bug: :point_left:
 
-* There was a major bug in HuggingFace data loader for the EUR-LEX task, which affected the label list under consideration in the training script.
+There was a major bug in HuggingFace data loader for the EUR-LEX task, which affected the label list under consideration in the training script. In the original experiments for the reported leaderboard we used custom data loaders, and then we built and released the HuggingFace dataset and data loader w/o noticing this “stealthy” bug. In other words, the leaderboard results are reliable.
 
-* In the released HuggingFace data loader,  all 127 labels of EUROVOC at level 2 are pre-defined, and lexically ordered based on their EUROVOC IDs (https://github.com/huggingface/datasets/blob/1529bdca496d2180bc2af6e1607dd0708438b873/datasets/lex_glue/lex_glue.py#L48).
+The :bug: has been already fixed, so you can continue developing models seamlessly. Make sure to update the HF Datasets library and clear the cache, in case there are cached versions of the dataset:
 
-* In our paper, in Section 3.2 "Tasks and Datasets", paragraph "EUR-LEX" we mention:
-
-```
-"It supports four different label granularities, comprising 21, 127, 567, 7390 EuroVoc concepts, respectively.
-We use the 100 most frequent concepts from level 2 [...]."
+```bash
+pip install --upgrade datasets
+rm -rf  ~/.cache/huggingface/datasets/lex_glue
 ```
 
-* Wrongfully, the current EUR-LEX training script considers the first 100 labels, instead of the most-frequent ones based on the training label distribution: 
-https://github.com/coastalcph/lex-glue/blob/d640bfcf7bd11e1034b5aa85c03f3d6b7b17ef6c/experiments/eurlex.py#L214
 
-* In the original experiments for the reported leaderboard we used custom data loaders, and then we built and released the HuggingFace dataset and data loader w/o noticing this “stealthy” bug... 
-
-* We have already made a pull request to fix this issue on the data loader (https://github.com/huggingface/datasets/pull/5048) trimming the label list to include only the 100 most-frequent labels.
-
-**Temporary Hot Fix :adhesive_bandage: **
-
-Until the pull request is accepted and merged (probably early next week) by HF people, you can also replicate the EUR-LEX results by manually defining the label list based on the 100 most-frequent labels, by replacing this line https://github.com/coastalcph/lex-glue/blob/d640bfcf7bd11e1034b5aa85c03f3d6b7b17ef6c/experiments/eurlex.py#L214
-
-with this line of code:
-
-```python
-labels = [119, 120, 114, 90, 28, 29, 30, 82, 87, 8, 44, 31, 33, 94, 22, 14, 52, 91, 92, 13, 89, 86, 118, 93, 12, 68, 83,
-          98, 11, 7, 32, 115, 96, 79, 116, 106, 81, 75, 117, 112, 59, 6, 77, 95, 72, 108, 60, 99, 74, 24, 27, 34, 58,
-          66, 84, 61, 16, 107, 20, 43, 97, 105, 76, 67, 80, 57, 63, 37, 36, 85, 5, 109, 69, 38, 78, 39, 49, 23, 42, 100,
-          17, 70, 9, 51, 113, 103, 102, 110, 0, 41, 111, 101, 35, 64, 10, 121, 21, 26, 71, 122]
-```
-
-Sorry for the inconvenience!
+Sorry for the inconvenience! :hugs:
 
 ## Dataset Summary
 
