@@ -27,7 +27,7 @@ def main():
         if not os.path.exists(f'logs'):
             os.mkdir(f'logs')
         os.mkdir(f'logs/{config.dataset}')
-    handlers = [logging.FileHandler(f'logs/{config.dataset}/svm.txt'), logging.StreamHandler()]
+    handlers = [logging.FileHandler(f'logs/{config.dataset}/_svm.txt'), logging.StreamHandler()]
     logging.basicConfig(handlers=handlers, level=logging.INFO)
 
     def get_text(dataset):
@@ -104,7 +104,7 @@ def main():
         logging.info('VALIDATION RESULTS:')
         y_pred = gs_clf.predict(get_text(dataset['validation']))
         y_true = get_labels(dataset["validation"], mlb)
-        if config.task_type == 'multi_label':
+        if config.task_type == 'multi_label' and config.dataset != 'eurlex':
             y_true = add_zero_class(y_true)
             y_pred = add_zero_class(y_pred)
 
@@ -114,7 +114,7 @@ def main():
         logging.info('TEST RESULTS:')
         y_pred = gs_clf.predict(get_text(dataset['test']))
         y_true = get_labels(dataset["test"], mlb)
-        if config.task_type == 'multi_label':
+        if config.task_type == 'multi_label' and config.dataset != 'eurlex':
             y_true = add_zero_class(y_true)
             y_pred = add_zero_class(y_pred)
         logging.info(f'Micro-F1: {metrics.f1_score(y_true, y_pred, average="micro")*100:.1f}')
