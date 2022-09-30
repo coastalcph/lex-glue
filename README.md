@@ -2,6 +2,42 @@
 
 ![LexGLUE Graphic](https://repository-images.githubusercontent.com/411072132/5c49b313-ab36-4391-b785-40d9478d0f73)
 
+
+## :mega: :rotating_light: Important Notice related to the EUR-LEX dataset :bug: :point_left:
+
+* There was a major bug in HuggingFace data loader for the EUR-LEX task, which affected the label list under consideration in the training script.
+
+* In the released HuggingFace data loader,  all 127 labels of EUROVOC at level 2 are pre-defined, and lexically ordered based on their EUROVOC IDs (https://github.com/huggingface/datasets/blob/1529bdca496d2180bc2af6e1607dd0708438b873/datasets/lex_glue/lex_glue.py#L48).
+
+* In our paper, in Section 3.2 "Tasks and Datasets", paragraph "EUR-LEX" we mention:
+
+```
+"It supports four different label granularities, comprising 21, 127, 567, 7390 EuroVoc concepts, respectively.
+We use the 100 most frequent concepts from level 2 [...]."
+```
+
+* Wrongfully, the current EUR-LEX training script considers the first 100 labels, instead of the most-frequent ones based on the training label distribution: 
+https://github.com/coastalcph/lex-glue/blob/d640bfcf7bd11e1034b5aa85c03f3d6b7b17ef6c/experiments/eurlex.py#L214
+
+* In the original experiments for the reported leaderboard we used custom data loaders, and then we built and released the HuggingFace dataset and data loader w/o noticing this “stealthy” bug... 
+
+* We have already made a pull request to fix this issue on the data loader (https://github.com/huggingface/datasets/pull/5048) trimming the label list to include only the 100 most-frequent labels.
+
+**Temporary Hot Fix :adhesive_bandage: **
+
+Until the pull request is accepted and merged (probably early next week) by HF people, you can also replicate the EUR-LEX results by manually defining the label list based on the 100 most-frequent labels, by replacing this line https://github.com/coastalcph/lex-glue/blob/d640bfcf7bd11e1034b5aa85c03f3d6b7b17ef6c/experiments/eurlex.py#L214
+
+with this line of code:
+
+```python
+labels = [119, 120, 114, 90, 28, 29, 30, 82, 87, 8, 44, 31, 33, 94, 22, 14, 52, 91, 92, 13, 89, 86, 118, 93, 12, 68, 83,
+          98, 11, 7, 32, 115, 96, 79, 116, 106, 81, 75, 117, 112, 59, 6, 77, 95, 72, 108, 60, 99, 74, 24, 27, 34, 58,
+          66, 84, 61, 16, 107, 20, 43, 97, 105, 76, 67, 80, 57, 63, 37, 36, 85, 5, 109, 69, 38, 78, 39, 49, 23, 42, 100,
+          17, 70, 9, 51, 113, 103, 102, 110, 0, 41, 111, 101, 35, 64, 10, 121, 21, 26, 71, 122]
+```
+
+Sorry for the inconvenience!
+
 ## Dataset Summary
 
 Inspired by the recent widespread use of the GLUE multi-task benchmark NLP dataset ([Wang et al., 2018](https://aclanthology.org/W18-5446/)), the subsequent more difficult SuperGLUE ([Wang et al., 2109](https://openreview.net/forum?id=rJ4km2R5t7)), other previous multi-task NLP benchmarks ([Conneau and Kiela,2018](https://aclanthology.org/L18-1269/); [McCann et al., 2018](https://arxiv.org/abs/1806.08730)), and similar initiatives in other domains ([Peng et al., 2019](https://arxiv.org/abs/1906.05474)), we introduce LexGLUE, a benchmark dataset to evaluate the performance of NLP methods in legal tasks. LexGLUE is based on seven existing legal NLP datasets, selected using criteria largely from SuperGLUE.
@@ -16,16 +52,24 @@ If you participate, use the LexGLUE benchmark, or our experimentation library, p
 
 [*Ilias Chalkidis, Abhik Jana, Dirk Hartung, Michael Bommarito, Ion Androutsopoulos, Daniel Martin Katz, and Nikolaos Aletras.*
 *LexGLUE: A Benchmark Dataset for Legal Language Understanding in English.*
-*2022. In the Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics. Dublin, Ireland.*](https://arxiv.org/abs/2110.00976)
+*2022. In the Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics. Dublin, Ireland.*](https://aclanthology.org/2022.acl-long.297/)
 ```
-@inproceedings{chalkidis-etal-2021-lexglue,
-        title={LexGLUE: A Benchmark Dataset for Legal Language Understanding in English}, 
-        author={Chalkidis, Ilias and Jana, Abhik and Hartung, Dirk and
-        Bommarito, Michael and Androutsopoulos, Ion and Katz, Daniel Martin and
-        Aletras, Nikolaos},
-        year={2022},
-        booktitle={Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics},
-        address={Dubln, Ireland},
+@inproceedings{chalkidis-etal-2022-lexglue,
+    title = "{L}ex{GLUE}: A Benchmark Dataset for Legal Language Understanding in {E}nglish",
+    author = "Chalkidis, Ilias  and
+      Jana, Abhik  and
+      Hartung, Dirk  and
+      Bommarito, Michael  and
+      Androutsopoulos, Ion  and
+      Katz, Daniel  and
+      Aletras, Nikolaos",
+    booktitle = "Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+    month = may,
+    year = "2022",
+    address = "Dublin, Ireland",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2022.acl-long.297",
+    pages = "4310--4330",
 }
 ```
 
