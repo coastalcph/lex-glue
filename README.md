@@ -14,8 +14,7 @@ pip install --upgrade datasets
 rm -rf  ~/.cache/huggingface/datasets/lex_glue
 ```
 
-
-Sorry for the inconvenience! :hugs:
+Thanks to [@JamesLYC88](https://github.com/JamesLYC88) for digging up the :bug:, and sorry for the inconvenience! :hugs:
 
 ## Dataset Summary
 
