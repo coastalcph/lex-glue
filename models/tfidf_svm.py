@@ -13,6 +13,8 @@ import logging
 import os
 import argparse
 
+dataset_n_classes = {'ecthr_a': 10, 'ecthr_b': 10, 'scotus': 14, 'eurlex': 100, 'ledgar': 100, 'unfair_tos': 8, 'case_hold': 4}
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -20,8 +22,8 @@ def main():
     parser.add_argument('--dataset',  default='eurlex', type=str)
     parser.add_argument('--task_type', default='multi_label', type=str)
     parser.add_argument('--text_limit', default=-1, type=int)
-    parser.add_argument('--n_classes', default=100, type=int)
     config = parser.parse_args()
+    n_classes = dataset_n_classes[config.dataset]
 
     if not os.path.exists(f'logs/{config.dataset}'):
         if not os.path.exists(f'logs'):
@@ -89,7 +91,7 @@ def main():
         x_train_val = x_train + x_val
         
         if config.task_type == 'multi_label':
-            mlb = MultiLabelBinarizer(classes=range(config.n_classes))
+            mlb = MultiLabelBinarizer(classes=range(n_classes))
             mlb.fit(dataset['train']['labels'])
         else:
             mlb = None
