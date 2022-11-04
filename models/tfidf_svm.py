@@ -1,26 +1,29 @@
+import pandas
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
 from sklearn.model_selection import GridSearchCV
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import LinearSVC
 from sklearn import metrics
-from sklearn.pipeline import Pipeline
 from sklearn.model_selection import PredefinedSplit
 from sklearn.preprocessing import MultiLabelBinarizer
 import numpy as np
+import pandas as pd
+from sklearn.preprocessing import FunctionTransformer
+from sklearn.pipeline import FeatureUnion, Pipeline
 from datasets import load_dataset
 import logging
 import os
 import argparse
 
-dataset_n_classes = {'ecthr_a': 10, 'ecthr_b': 10, 'scotus': 14, 'eurlex': 100, 'ledgar': 100, 'unfair_tos': 8, 'case_hold': 4}
+dataset_n_classes = {'ecthr_a': 10, 'ecthr_b': 10, 'scotus': 14, 'eurlex': 100, 'ledgar': 100, 'unfair_tos': 8, 'case_hold': 5}
 
 
 def main():
     parser = argparse.ArgumentParser()
     # Required arguments
-    parser.add_argument('--dataset',  default='eurlex', type=str)
-    parser.add_argument('--task_type', default='multi_label', type=str)
+    parser.add_argument('--dataset',  default='case_hold', type=str)
+    parser.add_argument('--task_type', default='multi_class', type=str)
     parser.add_argument('--text_limit', default=-1, type=int)
     config = parser.parse_args()
     n_classes = dataset_n_classes[config.dataset]
@@ -37,8 +40,10 @@ def main():
             texts = [' '.join(text) for text in dataset['text']]
             return [' '.join(text.split()[:config.text_limit]) for text in texts]
         elif config.dataset == 'case_hold':
-            return [contexts[0] + ' [SEP] '.join(holdings)
-                    for contexts, holdings in zip(dataset['contexts'], dataset['endings'])]
+            data = [[context] + endings for context, endings in zip(dataset['context'], dataset['endings'])]
+            return pd.DataFrame(data=data,
+                                columns=['context', 'option_1', 'option_2', 'option_3', 'options_4', 'option_5']
+                                )
         else:
             return [' '.join(text.split()[:config.text_limit]) for text in dataset['text']]
 
@@ -65,6 +70,12 @@ def main():
                 'clf__estimator__C': [0.1, 1, 10],
                 'clf__estimator__loss': ('hinge', 'squared_hinge')
             }
+        elif config.dataset == 'case_hold':
+            classifier = LinearSVC(random_state=seed, max_iter=50000)
+            parameters = {
+                'clf__C': [0.1, 1, 10],
+                'clf__loss': ('hinge', 'squared_hinge')
+            }
         else:
             classifier = LinearSVC(random_state=seed, max_iter=50000)
             parameters = {
@@ -74,11 +85,28 @@ def main():
             }
 
         # Init Pipeline (TF-IDF, SVM)
-        text_clf = Pipeline([('vect', CountVectorizer(stop_words=stopwords.words('english'),
-                                                      ngram_range=(1, 3), min_df=5)),
-                             ('tfidf', TfidfTransformer()),
-                             ('clf', classifier),
-                             ])
+        if config.dataset == 'case_hold':
+            text_clf = Pipeline([
+                ('union', FeatureUnion([('context_tfidf',
+                                Pipeline([('extract_field', FunctionTransformer(lambda x: x['context'], validate=False)),
+                                          ('vect', CountVectorizer(stop_words=stopwords.words('english'),
+                                                                   ngram_range=(1, 3), min_df=5, max_features=40000)),
+                                          ('tfidf', TfidfTransformer())]))] +
+                             [(f'option_{idx}_tfidf',
+                               Pipeline([('extract_field', FunctionTransformer(lambda x: x[f'option_{idx}'], validate=False)),
+                                         ('vect', CountVectorizer(stop_words=stopwords.words('english'),
+                                                                  ngram_range=(1, 3), min_df=5, max_features=40000)),
+                                         ('tfidf', TfidfTransformer())]))
+                              for idx in range(1, 6)]
+                             )),
+                ('clf', classifier)
+            ])
+        else:
+            text_clf = Pipeline([('vect', CountVectorizer(stop_words=stopwords.words('english'),
+                                                          ngram_range=(1, 3), min_df=5)),
+                                 ('tfidf', TfidfTransformer()),
+                                 ('clf', classifier),
+                                 ])
 
         # Fixate Validation Split
         split_index = [-1] * len(dataset['train']) + [0] * len(dataset['validation'])
@@ -88,7 +116,7 @@ def main():
         # Pre-process inputs, outputs
         x_train = get_text(dataset['train'])
         x_val = get_text(dataset['validation'])
-        x_train_val = x_train + x_val
+        x_train_val = pd.concat([x_train, x_val])
         
         if config.task_type == 'multi_label':
             mlb = MultiLabelBinarizer(classes=range(n_classes))
