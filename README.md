@@ -130,14 +130,14 @@ We report the arithmetic, harmonic, and geometric mean across tasks following [S
 <table>
         <tr><td><b>Dataset</b></td><td><b>ECtHR A</b></td><td><b>ECtHR B</b></td><td><b>SCOTUS</b></td><td><b>EUR-LEX</b></td><td><b>LEDGAR</b></td><td><b>UNFAIR-ToS</b></td><td><b>CaseHOLD</b></td></tr>
 <tr><td><b>Model</b></td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1</td><td>μ-F1 / m-F1  </td></tr>
-<tr><td>TFIDF+SVM</td><td> 64.7 / 51.7  </td><td>74.6 / 65.1 </td><td> <b>78.2</b> / <b>69.5</b> </td><td>71.3  / 51.4 </td><td>87.2   / 82.4 </td><td>95.4  / 78.8</td><td>n/a   </td></tr>
+<tr><td>TFIDF+SVM</td><td> 62.6 / 48.9  </td><td>73.0 / 63.8 </td><td> 74.0 / 64.4 </td><td>71.3  / 51.4 </td><td>87.0   / 81.4 </td><td>94.7  / 75.0</td><td>22.4   </td></tr>
 <td>BERT</td> <td> <b>71.2</b> /  63.6 </td> <td> 79.7 /  73.4 </td> <td> 68.3 /  58.3 </td> <td> 71.4 /  57.2 </td> <td> 87.6 /  81.8 </td> <td> 95.6 /  81.3 </td> <td> 70.8 </td> </tr>
 <td>RoBERTa</td> <td> 69.2 /  59.0 </td> <td> 77.3 /  68.9 </td> <td> 71.6 /  62.0 </td> <td> 71.9 /  <b>57.9</b> </td> <td> 87.9 /  82.3 </td> <td> 95.2 /  79.2 </td> <td> 71.4 </td> </tr>
 <td>DeBERTa</td> <td> 70.0 /  60.8 </td> <td> 78.8 /  71.0 </td> <td> 71.1 /  62.7 </td> <td> <b>72.1</b> /  57.4 </td> <td> 88.2 /  <b>83.1</b> </td> <td> 95.5 /  80.3 </td> <td> 72.6 </td> </tr>
 <td>Longformer</td> <td> 69.9 /  <b>64.7</b> </td> <td> 79.4 /  71.7 </td> <td> 72.9 /  64.0 </td> <td> 71.6 /  57.7 </td> <td> 88.2 /  83.0 </td> <td> 95.5 /  80.9 </td> <td> 71.9 </td> </tr>
 <td>BigBird</td> <td> 70.0 /  62.9 </td> <td> 78.8 /  70.9 </td> <td> 72.8 /  62.0 </td> <td> 71.5 /  56.8 </td> <td> 87.8 /  82.6 </td> <td> 95.7 /  81.3 </td> <td> 70.8 </td> </tr>
-<td>Legal-BERT</td> <td> 70.0 /  64.0 </td> <td> <b>80.4</b> /  <b>74.7</b> </td> <td> 76.4 /  66.5 </td> <td> <b>72.1</b> /  57.4 </td> <td> 88.2 /  83.0 </td> <td> <b>96.0</b> /  <b>83.0</b> </td> <td> 75.3 </td> </tr>
-<td>CaseLaw-BERT</td> <td> 69.8 /  62.9 </td> <td> 78.8 /  70.3 </td> <td> 76.6 /  65.9 </td> <td> 70.7 /  56.6 </td> <td> <b>88.3</b> /  83.0 </td> <td> <b>96.0</b> /  82.3 </td> <td> <b>75.4</b> </td> </tr>
+<td>Legal-BERT</td> <td> 70.0 /  64.0 </td> <td> <b>80.4</b> /  <b>74.7</b> </td> <td> 76.4 /  <b>66.5</b> </td> <td> <b>72.1</b> /  57.4 </td> <td> 88.2 /  83.0 </td> <td> <b>96.0</b> /  <b>83.0</b> </td> <td> 75.3 </td> </tr>
+<td>CaseLaw-BERT</td> <td> 69.8 /  62.9 </td> <td> 78.8 /  70.3 </td> <td> <b>76.6</b> /  65.9 </td> <td> 70.7 /  56.6 </td> <td> <b>88.3</b> /  83.0 </td> <td> <b>96.0</b> /  82.3 </td> <td> <b>75.4</b> </td> </tr>
 
 </table>
 
@@ -254,3 +254,7 @@ You can re-load fine-tuned HierBERT models following our example python script [
 ### I still have open questions...
 
 Please post your question on [Discussions](https://github.com/coastalcph/lex-glue/discussions) section or communicate with the corresponding author via e-mail.
+
+## Credits
+
+Thanks to [@JamesLYC88](https://github.com/JamesLYC88) and [@danigoju](https://github.com/danigoju) for digging up for :bug:s!
