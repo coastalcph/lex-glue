@@ -130,7 +130,7 @@ We report the arithmetic, harmonic, and geometric mean across tasks following [S
 <table>
         <tr><td><b>Dataset</b></td><td><b>ECtHR A</b></td><td><b>ECtHR B</b></td><td><b>SCOTUS</b></td><td><b>EUR-LEX</b></td><td><b>LEDGAR</b></td><td><b>UNFAIR-ToS</b></td><td><b>CaseHOLD</b></td></tr>
 <tr><td><b>Model</b></td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1 </td><td>μ-F1  / m-F1</td><td>μ-F1 / m-F1  </td></tr>
-<tr><td>TFIDF+SVM</td><td> 62.6 / 48.9  </td><td>73.0 / 63.8 </td><td> 74.0 / 64.4 </td><td>71.3  / 51.4 </td><td>87.0   / 81.4 </td><td>94.7  / 75.0</td><td>22.4   </td></tr>
+<tr><td>TFIDF+SVM</td><td> 62.6 / 48.9  </td><td>73.0 / 63.8 </td><td> 74.0 / 64.4 </td><td>63.4  / 47.9 </td><td>87.0   / 81.4 </td><td>94.7  / 75.0</td><td>22.4   </td></tr>
 <td>BERT</td> <td> <b>71.2</b> /  63.6 </td> <td> 79.7 /  73.4 </td> <td> 68.3 /  58.3 </td> <td> 71.4 /  57.2 </td> <td> 87.6 /  81.8 </td> <td> 95.6 /  81.3 </td> <td> 70.8 </td> </tr>
 <td>RoBERTa</td> <td> 69.2 /  59.0 </td> <td> 77.3 /  68.9 </td> <td> 71.6 /  62.0 </td> <td> 71.9 /  <b>57.9</b> </td> <td> 87.9 /  82.3 </td> <td> 95.2 /  79.2 </td> <td> 71.4 </td> </tr>
 <td>DeBERTa</td> <td> 70.0 /  60.8 </td> <td> 78.8 /  71.0 </td> <td> 71.1 /  62.7 </td> <td> <b>72.1</b> /  57.4 </td> <td> 88.2 /  <b>83.1</b> </td> <td> 95.5 /  80.3 </td> <td> 72.6 </td> </tr>
