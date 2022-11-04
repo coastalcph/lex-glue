@@ -17,10 +17,10 @@ import argparse
 def main():
     parser = argparse.ArgumentParser()
     # Required arguments
-    parser.add_argument('--dataset',  default='eurlex')
-    parser.add_argument('--task_type', default='multi_label')
-    parser.add_argument('--text_limit', default=-1)
-    parser.add_argument('--n_classes', default=100)
+    parser.add_argument('--dataset',  default='eurlex', type=str)
+    parser.add_argument('--task_type', default='multi_label', type=str)
+    parser.add_argument('--text_limit', default=-1, , type=int)
+    parser.add_argument('--n_classes', default=100, , type=int)
     config = parser.parse_args()
 
     if not os.path.exists(f'logs/{config.dataset}'):
