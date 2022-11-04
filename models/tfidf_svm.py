@@ -27,7 +27,7 @@ def main():
         if not os.path.exists(f'logs'):
             os.mkdir(f'logs')
         os.mkdir(f'logs/{config.dataset}')
-    handlers = [logging.FileHandler(f'logs/{config.dataset}/_svm.txt'), logging.StreamHandler()]
+    handlers = [logging.FileHandler(f'logs/{config.dataset}_svm.txt'), logging.StreamHandler()]
     logging.basicConfig(handlers=handlers, level=logging.INFO)
 
     def get_text(dataset):
@@ -53,7 +53,7 @@ def main():
         return augmented_labels
 
     scores = {'micro-f1': [], 'macro-f1': []}
-    dataset = load_dataset('data/lex_glue', config.dataset)
+    dataset = load_dataset('lex_glue', config.dataset)
 
     for seed in range(1, 6):
         if config.task_type == 'multi_label':
