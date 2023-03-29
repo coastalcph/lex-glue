@@ -12,7 +12,7 @@ from typing import Optional
 import datasets
 import numpy as np
 from datasets import load_dataset
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, roc_auc_score, accuracy_score,precision_score
 from trainer import MultilabelTrainer
 from scipy.special import expit
 from torch import nn
@@ -35,8 +35,8 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
-from models.hierbert import HierarchicalBert
-from models.deberta import DebertaForSequenceClassification
+from hierbert import HierarchicalBert
+from deberta import DebertaForSequenceClassification
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
@@ -422,7 +422,9 @@ def main():
         # Compute scores
         macro_f1 = f1_score(y_true=y_true, y_pred=y_pred, average='macro', zero_division=0)
         micro_f1 = f1_score(y_true=y_true, y_pred=y_pred, average='micro', zero_division=0)
-        return {'macro-f1': macro_f1, 'micro-f1': micro_f1}
+        macro_auc = roc_auc_score(y_true=y_true[:,:-1], y_score=logits, average='macro', multi_class='ovo')
+        micro_auc = roc_auc_score(y_true=y_true[:,:-1], y_score=logits, average='micro', multi_class='ovo')
+        return {'macro-f1': macro_f1, 'micro-f1': micro_f1, 'macro-auc': macro_auc, 'micro-auc': micro_auc}
 
     # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
     if data_args.pad_to_max_length:

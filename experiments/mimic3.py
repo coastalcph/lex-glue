@@ -1,27 +1,26 @@
 #!/usr/bin/env python
 # coding=utf-8
-""" Finetuning models on SCOTUS (e.g. Bert, RoBERTa, LEGAL-BERT)."""
-
+""" Finetuning models on the MIMIC-III-50 dataset (e.g. Bert, RoBERTa, LEGAL-BERT)."""
+import csv
 import logging
 import os
 import random
-import re
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
 import datasets
+import numpy as np
 from datasets import load_dataset
 from sklearn.metrics import f1_score, roc_auc_score, accuracy_score,precision_score
-from hierbert import HierarchicalBert
-import numpy as np
+from trainer import MultilabelTrainer
+from scipy.special import expit
 from torch import nn
 import glob
 import shutil
 
 import transformers
 from transformers import (
-    Trainer,
     AutoConfig,
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -36,6 +35,7 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
+from hierbert import HierarchicalBert
 from deberta import DebertaForSequenceClassification
 
 
@@ -58,10 +58,10 @@ class DataTrainingArguments:
     """
 
     max_seq_length: Optional[int] = field(
-        default=128,
+        default=4096,
         metadata={
             "help": "The maximum total input sequence length after tokenization. Sequences longer "
-                    "than this will be truncated, sequences shorter will be padded."
+            "than this will be truncated, sequences shorter will be padded."
         },
     )
     max_segments: Optional[int] = field(
@@ -74,7 +74,7 @@ class DataTrainingArguments:
     max_seg_length: Optional[int] = field(
         default=128,
         metadata={
-            "help": "The maximum total input sequence length after tokenization. Sequences longer "
+            "help": "The maximum segment (paragraph) length to be considered. Segments longer "
                     "than this will be truncated, sequences shorter will be padded."
         },
     )
@@ -107,6 +107,12 @@ class DataTrainingArguments:
         metadata={
             "help": "For debugging purposes or quicker training, truncate the number of prediction examples to this "
             "value if set."
+        },
+    )
+    task: Optional[str] = field(
+        default='ecthr_a',
+        metadata={
+            "help": "Define downstream task"
         },
     )
     server_ip: Optional[str] = field(default=None, metadata={"help": "For distant debugging."})
@@ -164,15 +170,6 @@ def main():
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
-    # Setup distant debugging if needed
-    if data_args.server_ip and data_args.server_port:
-        # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
-        import ptvsd
-
-        print("Waiting for debugger attach")
-        ptvsd.enable_attach(address=(data_args.server_ip, data_args.server_port), redirect_output=True)
-        ptvsd.wait_for_attach()
-
     # Fix boolean parameter
     if model_args.do_lower_case == 'False' or not model_args.do_lower_case:
         model_args.do_lower_case = False
@@ -183,6 +180,15 @@ def main():
         model_args.hierarchical = False
     else:
         model_args.hierarchical = True
+
+    # Setup distant debugging if needed
+    if data_args.server_ip and data_args.server_port:
+        # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
+        import ptvsd
+
+        print("Waiting for debugger attach")
+        ptvsd.enable_attach(address=(data_args.server_ip, data_args.server_port), redirect_output=True)
+        ptvsd.wait_for_attach()
 
     # Setup logging
     logging.basicConfig(
@@ -223,20 +229,23 @@ def main():
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
-    # In distributed training, the load_dataset function guarantees that only one local process can concurrently
-    # download the dataset.
-    # Downloading and loading eurlex dataset from the hub.
+
+
     if training_args.do_train:
-        train_dataset = load_dataset("lex_glue", "scotus", split="train", cache_dir=model_args.cache_dir)
+        train_dataset = load_dataset("csv", data_files="/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/train_50_multihot.csv",name=data_args.task)
 
     if training_args.do_eval:
-        eval_dataset = load_dataset("lex_glue", "scotus", split="validation", cache_dir=model_args.cache_dir)
+        eval_dataset = load_dataset("csv", data_files="/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/dev_50_multihot.csv",name=data_args.task)
 
     if training_args.do_predict:
-        predict_dataset = load_dataset("lex_glue", "scotus", split="test", cache_dir=model_args.cache_dir)
+        predict_dataset = load_dataset("csv", data_files="/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/test_50_multihot.csv",name=data_args.task)
 
     # Labels
-    label_list = list(range(14))
+    with open("/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/TOP_50_CODES.csv", 'r') as f:
+    reader = csv.reader(file)
+    label_list = []
+    for row in reader:
+        data.append(row[0])
     num_labels = len(label_list)
 
     # Load pretrained model and tokenizer
@@ -245,7 +254,7 @@ def main():
     config = AutoConfig.from_pretrained(
         model_args.config_name if model_args.config_name else model_args.model_name_or_path,
         num_labels=num_labels,
-        finetuning_task="scotus",
+        finetuning_task=f"{data_args.task}",
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
@@ -276,6 +285,7 @@ def main():
             revision=model_args.model_revision,
             use_auth_token=True if model_args.use_auth_token else None,
         )
+
     if model_args.hierarchical:
         # Hack the classifier encoder to use hierarchical BERT
         if config.model_type in ['bert', 'deberta']:
@@ -317,49 +327,8 @@ def main():
         padding = False
 
     def preprocess_function(examples):
-        # Tokenize the texts
-        if model_args.hierarchical:
-            case_template = [[0] * data_args.max_seq_length]
-            if config.model_type == 'roberta':
-                batch = {'input_ids': [], 'attention_mask': []}
-                for doc in examples['text']:
-                    doc = re.split('\n{2,}', doc)
-                    doc_encodings = tokenizer(doc[:data_args.max_segments], padding=padding,
-                                              max_length=data_args.max_seg_length, truncation=True)
-                    batch['input_ids'].append(doc_encodings['input_ids'] + case_template * (
-                            data_args.max_segments - len(doc_encodings['input_ids'])))
-                    batch['attention_mask'].append(doc_encodings['attention_mask'] + case_template * (
-                            data_args.max_segments - len(doc_encodings['attention_mask'])))
-            else:
-                batch = {'input_ids': [], 'attention_mask': [], 'token_type_ids': []}
-                for doc in examples['text']:
-                    doc = re.split('\n{2,}', doc)
-                    doc_encodings = tokenizer(doc[:data_args.max_segments], padding=padding,
-                                              max_length=data_args.max_seg_length, truncation=True)
-                    batch['input_ids'].append(doc_encodings['input_ids'] + case_template * (
-                                data_args.max_segments - len(doc_encodings['input_ids'])))
-                    batch['attention_mask'].append(doc_encodings['attention_mask'] + case_template * (
-                                data_args.max_segments - len(doc_encodings['attention_mask'])))
-                    batch['token_type_ids'].append(doc_encodings['token_type_ids'] + case_template * (
-                                data_args.max_segments - len(doc_encodings['token_type_ids'])))
-        elif config.model_type in ['longformer', 'big_bird']:
-            cases = []
-            max_position_embeddings = config.max_position_embeddings - 2 if config.model_type == 'longformer' \
-                else config.max_position_embeddings
-            for doc in examples['text']:
-                doc = re.split('\n{2,}', doc)
-                cases.append(f' {tokenizer.sep_token} '.join([' '.join(paragraph.split()[:data_args.max_seg_length])
-                                                              for paragraph in doc[:data_args.max_segments]]))
-            batch = tokenizer(cases, padding=padding, max_length=max_position_embeddings, truncation=True)
-            if config.model_type == 'longformer':
-                global_attention_mask = np.zeros((len(cases), max_position_embeddings), dtype=np.int32)
-                # global attention on cls token
-                global_attention_mask[:, 0] = 1
-                batch['global_attention_mask'] = list(global_attention_mask)
-        else:
-            batch = tokenizer(examples['text'], padding=padding, max_length=512, truncation=True)
+        pass
 
-        batch["label"] = [label_list.index(labels) for labels in examples["label"]]
 
         return batch
 
@@ -402,16 +371,9 @@ def main():
     # You can define your custom compute_metrics function. It takes an `EvalPrediction` object (a namedtuple with a
     # predictions and label_ids field) and has to return a dictionary string to float.
     def compute_metrics(p: EvalPrediction):
-        logits = np.nan_to_num(p.predictions[0]) if isinstance(p.predictions, tuple) else np.nan_to_num(p.predictions)
-        y_true = np.array(p.label_ids, dtype=np.int)
-        preds = np.argmax(logits, axis=1)
-        probabilities = np.exp(logits) / np.sum(np.exp(logits), axis=1, keepdims=True)
-        accuracy = np.mean(preds == p.label_ids)
-        macro_f1 = f1_score(y_true=y_true, y_pred=preds, average='macro', zero_division=0)
-        micro_f1 = f1_score(y_true=y_true, y_pred=preds, average='micro', zero_division=0)
-        #macro_auc = roc_auc_score(y_true=y_true, y_score=probabilities, average='macro',multi_class='ovo')
-        #micro_auc = roc_auc_score(y_true=y_true, y_score=probabilities, average='micro',multi_class='ovo')
-        return {'accuracy': accuracy, 'macro-f1': macro_f1, 'micro-f1': micro_f1}#, 'macro-auc': macro_auc, 'micro-auc': micro_auc}
+        pass
+
+        return {'macro-f1': macro_f1, 'micro-f1': micro_f1, 'macro-auc': macro_auc, 'micro-auc': micro_auc}
 
     # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
     if data_args.pad_to_max_length:
@@ -422,7 +384,7 @@ def main():
         data_collator = None
 
     # Initialize our Trainer
-    trainer = Trainer(
+    trainer = MultilabelTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,
