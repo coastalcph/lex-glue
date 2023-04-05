@@ -232,20 +232,21 @@ def main():
 
 
     if training_args.do_train:
-        train_dataset = load_dataset("csv", data_files="/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/train_50_multihot.csv",name=data_args.task)
+        train_dataset = load_dataset("csv", data_files="/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/train_50.csv",name=data_args.task)
+        train_dataset=train_dataset['train']
 
     if training_args.do_eval:
-        eval_dataset = load_dataset("csv", data_files="/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/dev_50_multihot.csv",name=data_args.task)
-
+        eval_dataset = load_dataset("csv", data_files="/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/dev_50.csv",name=data_args.task)
+        eval_dataset=eval_dataset['train']
     if training_args.do_predict:
-        predict_dataset = load_dataset("csv", data_files="/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/test_50_multihot.csv",name=data_args.task)
-
+        predict_dataset = load_dataset("csv", data_files="/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/test_50.csv",name=data_args.task)
+        predict_dataset=predict_dataset['train']
     # Labels
     with open("/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/TOP_50_CODES.csv", 'r') as f:
-    reader = csv.reader(file)
-    label_list = []
-    for row in reader:
-        data.append(row[0])
+        reader = csv.reader(f)
+        label_list = []
+        for row in reader:
+            label_list.append(row[0])
     num_labels = len(label_list)
 
     # Load pretrained model and tokenizer
@@ -327,9 +328,48 @@ def main():
         padding = False
 
     def preprocess_function(examples):
-        pass
-
-
+        if model_args.hierarchical:
+            ehr_template = [[0] * data_args.max_seg_length]
+            if config.model_type == 'bert':
+                batch = {'input_ids': [], 'attention_mask': [], 'token_type_ids': []}
+                for ehr in examples['TEXT']:
+                    encoded_text = tokenizer(ehr, padding=padding,max_length=data_args.max_seq_length, truncation=True)
+                    # cut text to segments
+                    segments_ids = []
+                    for i in range(0, data_args.max_segments * data_args.max_seg_length, data_args.max_seg_length):
+                        segment_ids = encoded_text['input_ids'][i:i + data_args.max_seg_length]
+                        if not segment_ids:
+                            break
+                        segments_ids.append(segment_ids)
+                    decoded_segments = [tokenizer.decode(segment) for segment in segments_ids]
+                    ehr_encodings = tokenizer(decoded_segments[:data_args.max_segments], padding=padding,
+                                               max_length=data_args.max_seg_length, truncation=True)                    
+                    batch['input_ids'].append(ehr_encodings['input_ids'] + ehr_template * (
+                                                    data_args.max_segments - len(ehr_encodings['input_ids'])))
+                    batch['attention_mask'].append(ehr_encodings['attention_mask'] + ehr_template * (
+                                                    data_args.max_segments - len(ehr_encodings['attention_mask'])))
+                    batch['token_type_ids'].append(ehr_encodings['token_type_ids'] + ehr_template * (
+                                                    data_args.max_segments - len(ehr_encodings['token_type_ids'])))                           
+        
+        elif config.model_type in ['longformer', 'big_bird']:
+            ehrs = []
+            max_position_embeddings = config.max_position_embeddings - 2 if config.model_type == 'longformer' \
+                else config.max_position_embeddings
+            for ehr in examples['TEXT']:
+                ehrs.append(ehr)
+            batch = tokenizer(ehrs, padding=padding, max_length=max_position_embeddings, truncation=True)
+            if config.model_type == 'longformer':
+                global_attention_mask = np.zeros((len(ehrs), max_position_embeddings), dtype=np.int32)
+                # global attention on cls token
+                global_attention_mask[:, 0] = 1
+                batch['global_attention_mask'] = list(global_attention_mask)
+        else:
+            ehrs = []
+            for ehr in examples['TEXT']:
+                ehrs.append(ehr)
+            batch = tokenizer(ehrs, padding=padding, max_length=512, truncation=True)            
+        
+        batch["labels"] = [[1 if label in labels else 0 for label in label_list] for labels in (label_string.split(';') for label_string in examples["LABELS"])]
         return batch
 
     if training_args.do_train:
@@ -371,9 +411,22 @@ def main():
     # You can define your custom compute_metrics function. It takes an `EvalPrediction` object (a namedtuple with a
     # predictions and label_ids field) and has to return a dictionary string to float.
     def compute_metrics(p: EvalPrediction):
-        pass
-
-        return {'macro-f1': macro_f1, 'micro-f1': micro_f1, 'macro-auc': macro_auc, 'micro-auc': micro_auc}
+        y_true = p.label_ids
+        logits = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
+        y_preds = (expit(logits) > 0.5).astype('int32')
+        # Compute scores
+        macro_f1 = f1_score(y_true=y_true, y_pred=y_preds, average='macro', zero_division=0)
+        micro_f1 = f1_score(y_true=y_true, y_pred=y_preds, average='micro', zero_division=0)
+        macro_auc = roc_auc_score(y_true=y_true, y_score=logits, average='macro', multi_class='ovo')
+        micro_auc = roc_auc_score(y_true=y_true, y_score=logits, average='micro', multi_class='ovo')
+        # Compute P@5
+        top5_indices = np.argsort(-logits, axis=1)[:, :5]  # Get the indices of top 5 predictions for each sample
+        p_at_5_list = []
+        for i, true_label in enumerate(y_true):
+            p_at_5 = np.isin(true_label, top5_indices[i]).sum() / 5  # Calculate P@5 for each sample
+            p_at_5_list.append(p_at_5)
+        p_at_5_score = np.mean(p_at_5_list)  # Calculate the mean P@5 score for all samples
+        return {'macro-f1': macro_f1, 'micro-f1': micro_f1, 'macro-auc': macro_auc, 'micro-auc': micro_auc, 'p_at_5': p_at_5_score}
 
     # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
     if data_args.pad_to_max_length:
