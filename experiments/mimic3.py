@@ -248,6 +248,19 @@ def main():
         for row in reader:
             label_list.append(row[0])
     num_labels = len(label_list)
+    #PROC labels
+    with open("/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/TOP_50_PROC_CODES.csv", 'r') as f:
+        reader = csv.reader(f)
+        proc_list = []
+        for row in reader:
+            proc_list.append(row[0])
+    #DIAG labels
+    with open("/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/TOP_50_DIAG_CODES.csv", 'r') as f:
+        reader = csv.reader(f)
+        diag_list = []
+        for row in reader:
+            diag_list.append(row[0])
+    
 
     # Load pretrained model and tokenizer
     # In distributed training, the .from_pretrained methods guarantee that only one local process can concurrently
@@ -414,19 +427,37 @@ def main():
         y_true = p.label_ids
         logits = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
         y_preds = (expit(logits) > 0.5).astype('int32')
-        # Compute scores
+        # Compute regular scores
         macro_f1 = f1_score(y_true=y_true, y_pred=y_preds, average='macro', zero_division=0)
         micro_f1 = f1_score(y_true=y_true, y_pred=y_preds, average='micro', zero_division=0)
         macro_auc = roc_auc_score(y_true=y_true, y_score=logits, average='macro', multi_class='ovo')
         micro_auc = roc_auc_score(y_true=y_true, y_score=logits, average='micro', multi_class='ovo')
+        #proc&diag
+        proc_indices = [label_list.index(label) for label in proc_list]
+        diag_indices = [label_list.index(label) for label in diag_list]
+        y_true_proc = np.zeros_like(y_true)
+        y_true_proc[:, proc_indices] = y_true[:, proc_indices]
+        y_true_diag = np.zeros_like(y_true)
+        y_true_diag[:, diag_indices] = y_true[:, diag_indices]
+        y_preds_proc = np.zeros_like(y_preds)
+        y_preds_proc[:, proc_indices] = y_preds[:, proc_indices]
+        y_preds_diag = np.zeros_like(y_preds)
+        y_preds_diag[:, diag_indices] = y_preds[:, diag_indices]
+        proc_f1 = f1_score(y_true=y_true_proc, y_pred=y_preds_proc, average='micro', zero_division=0)
+        diag_f1 = f1_score(y_true=y_true_diag, y_pred=y_preds_diag, average='micro', zero_division=0)
+
+
         # Compute P@5
-        top5_indices = np.argsort(-logits, axis=1)[:, :5]  # Get the indices of top 5 predictions for each sample
         p_at_5_list = []
-        for i, true_label in enumerate(y_true):
-            p_at_5 = np.isin(true_label, top5_indices[i]).sum() / 5  # Calculate P@5 for each sample
+        top5_indices = np.argsort(-logits, axis=1)[:, :5]
+        for i, true_labels in enumerate(y_true):
+            true_labels_set = set(np.where(true_labels == 1)[0])
+            top5_preds_set = set(top5_indices[i])
+            intersection = true_labels_set.intersection(top5_preds_set)
+            p_at_5 = len(intersection) / min(len(top5_preds_set), 5)
             p_at_5_list.append(p_at_5)
-        p_at_5_score = np.mean(p_at_5_list)  # Calculate the mean P@5 score for all samples
-        return {'macro-f1': macro_f1, 'micro-f1': micro_f1, 'macro-auc': macro_auc, 'micro-auc': micro_auc, 'p_at_5': p_at_5_score}
+        p_at_5_score = np.mean(p_at_5_list)
+        return {'macro-f1': macro_f1, 'micro-f1': micro_f1, 'macro-auc': macro_auc, 'micro-auc': micro_auc, 'p_at_5': p_at_5_score,'proc-f1': proc_f1, 'diag-f1': diag_f1}
 
     # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
     if data_args.pad_to_max_length:
