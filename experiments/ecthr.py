@@ -64,6 +64,12 @@ class DataTrainingArguments:
             "than this will be truncated, sequences shorter will be padded."
         },
     )
+    truncate_head: Optional[bool] = field(
+    default=True,
+    metadata={
+        "help": "Whether to truncate tokens from the head (True) or tail (False) of the sequence."
+    },
+    )
     max_segments: Optional[int] = field(
         default=64,
         metadata={
@@ -364,7 +370,15 @@ def main():
             cases = []
             for case in examples['text']:
                 cases.append(f'\n'.join(case))
-            batch = tokenizer(cases, padding=padding, max_length=512, truncation=True)
+            if data_args.truncate_head:
+                batch = tokenizer(cases, padding=padding, max_length=512, truncation=True)
+            else:
+                encoded_text = tokenizer(cases, add_special_tokens=False)
+                start_positions = [max(0, len(ids_list) - (512 - 2)) for ids_list in encoded_text['input_ids']]
+                last_tokens_list = [ids_list[start_position:] for start_position, ids_list in zip(start_positions, encoded_text['input_ids'])]
+                last_texts = [tokenizer.decode(last_tokens) for last_tokens in last_tokens_list]
+                batch = tokenizer(last_texts, max_length=512, padding="max_length", truncation=True)
+
 
         batch["labels"] = [[1 if label in labels else 0 for label in label_list] for labels in examples["labels"]]
 

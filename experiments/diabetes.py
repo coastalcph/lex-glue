@@ -1,27 +1,29 @@
 #!/usr/bin/env python
 # coding=utf-8
-""" Finetuning models on SCOTUS (e.g. Bert, RoBERTa, LEGAL-BERT)."""
+""" Finetuning models on the diabetes dataset ."""
+from datasets import load_dataset
+from sklearn.model_selection import train_test_split
 
+import csv
 import logging
 import os
 import random
-import re
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
 import datasets
+import numpy as np
 from datasets import load_dataset
 from sklearn.metrics import f1_score, roc_auc_score, accuracy_score,precision_score
-from hierbert import HierarchicalBert
-import numpy as np
+from trainer import MultilabelTrainer
+from scipy.special import expit
 from torch import nn
 import glob
 import shutil
 
 import transformers
 from transformers import (
-    Trainer,
     AutoConfig,
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -36,6 +38,7 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
+from hierbert import HierarchicalBert
 from deberta import DebertaForSequenceClassification
 
 
@@ -58,17 +61,11 @@ class DataTrainingArguments:
     """
 
     max_seq_length: Optional[int] = field(
-        default=128,
+        default=4096,
         metadata={
             "help": "The maximum total input sequence length after tokenization. Sequences longer "
-                    "than this will be truncated, sequences shorter will be padded."
+            "than this will be truncated, sequences shorter will be padded."
         },
-    )
-    truncate_head: Optional[bool] = field(
-    default=True,
-    metadata={
-        "help": "Whether to truncate tokens from the head (True) or tail (False) of the sequence."
-    },
     )
     max_segments: Optional[int] = field(
         default=64,
@@ -80,7 +77,7 @@ class DataTrainingArguments:
     max_seg_length: Optional[int] = field(
         default=128,
         metadata={
-            "help": "The maximum total input sequence length after tokenization. Sequences longer "
+            "help": "The maximum segment (paragraph) length to be considered. Segments longer "
                     "than this will be truncated, sequences shorter will be padded."
         },
     )
@@ -114,6 +111,18 @@ class DataTrainingArguments:
             "help": "For debugging purposes or quicker training, truncate the number of prediction examples to this "
             "value if set."
         },
+    )
+    task: Optional[str] = field(
+        default='ecthr_a',
+        metadata={
+            "help": "Define downstream task"
+        },
+    )
+    truncate_head: Optional[bool] = field(
+    default=True,
+    metadata={
+        "help": "Whether to truncate tokens from the head (True) or tail (False) of the sequence."
+    },
     )
     server_ip: Optional[str] = field(default=None, metadata={"help": "For distant debugging."})
     server_port: Optional[str] = field(default=None, metadata={"help": "For distant debugging."})
@@ -170,15 +179,6 @@ def main():
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
-    # Setup distant debugging if needed
-    if data_args.server_ip and data_args.server_port:
-        # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
-        import ptvsd
-
-        print("Waiting for debugger attach")
-        ptvsd.enable_attach(address=(data_args.server_ip, data_args.server_port), redirect_output=True)
-        ptvsd.wait_for_attach()
-
     # Fix boolean parameter
     if model_args.do_lower_case == 'False' or not model_args.do_lower_case:
         model_args.do_lower_case = False
@@ -189,6 +189,15 @@ def main():
         model_args.hierarchical = False
     else:
         model_args.hierarchical = True
+
+    # Setup distant debugging if needed
+    if data_args.server_ip and data_args.server_port:
+        # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
+        import ptvsd
+
+        print("Waiting for debugger attach")
+        ptvsd.enable_attach(address=(data_args.server_ip, data_args.server_port), redirect_output=True)
+        ptvsd.wait_for_attach()
 
     # Setup logging
     logging.basicConfig(
@@ -229,21 +238,41 @@ def main():
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
-    # In distributed training, the load_dataset function guarantees that only one local process can concurrently
-    # download the dataset.
-    # Downloading and loading eurlex dataset from the hub.
+    dataset = load_dataset('json', data_files='/home/ghan/datasets/diabetes.json')
+    dataset_length = len(dataset['train'])
+    indices = list(range(dataset_length))
+    train_indices, test_indices = train_test_split(indices, test_size=0.2, random_state=42)
+    train_dataset = dataset['train'].select(train_indices)
+    test_dataset = dataset['train'].select(test_indices)
+
+
     if training_args.do_train:
-        train_dataset = load_dataset("lex_glue", "scotus", split="train", cache_dir=model_args.cache_dir)
-
+        train_dataset = train_dataset
     if training_args.do_eval:
-        eval_dataset = load_dataset("lex_glue", "scotus", split="validation", cache_dir=model_args.cache_dir)
+        eval_dataset = test_dataset
 
-    if training_args.do_predict:
-        predict_dataset = load_dataset("lex_glue", "scotus", split="test", cache_dir=model_args.cache_dir)
 
     # Labels
-    label_list = list(range(14))
+    label_list = ['abdominal','advanced-cad','alcohol-abuse','asf-for-mi','creatinine','dietsupp-2mos','drug-abuse','english','hba1c','keto-1yr','major-diabetes','makes-decisions','mi-6mos']
+
+    '''<ABDOMINAL met="met" />
+    <ADVANCED-CAD met="met" />
+    <ALCOHOL-ABUSE met="not met" />
+    <ASP-FOR-MI met="met" />
+    <CREATININE met="not met" />
+    <DIETSUPP-2MOS met="met" />
+    <DRUG-ABUSE met="not met" />
+    <ENGLISH met="met" />
+    <HBA1C met="not met" />
+    <KETO-1YR met="not met" />
+    <MAJOR-DIABETES met="not met" />
+    <MAKES-DECISIONS met="met" />
+    <MI-6MOS met="met" />'''
+    # Labels
     num_labels = len(label_list)
+
+
+    
 
     # Load pretrained model and tokenizer
     # In distributed training, the .from_pretrained methods guarantee that only one local process can concurrently
@@ -251,7 +280,7 @@ def main():
     config = AutoConfig.from_pretrained(
         model_args.config_name if model_args.config_name else model_args.model_name_or_path,
         num_labels=num_labels,
-        finetuning_task="scotus",
+        finetuning_task=f"{data_args.task}",
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
@@ -282,6 +311,7 @@ def main():
             revision=model_args.model_revision,
             use_auth_token=True if model_args.use_auth_token else None,
         )
+
     if model_args.hierarchical:
         # Hack the classifier encoder to use hierarchical BERT
         if config.model_type in ['bert', 'deberta']:
@@ -323,57 +353,58 @@ def main():
         padding = False
 
     def preprocess_function(examples):
-        # Tokenize the texts
         if model_args.hierarchical:
-            case_template = [[0] * data_args.max_seq_length]
-            if config.model_type == 'roberta':
-                batch = {'input_ids': [], 'attention_mask': []}
-                for doc in examples['text']:
-                    doc = re.split('\n{2,}', doc)
-                    doc_encodings = tokenizer(doc[:data_args.max_segments], padding=padding,
-                                              max_length=data_args.max_seg_length, truncation=True)
-                    batch['input_ids'].append(doc_encodings['input_ids'] + case_template * (
-                            data_args.max_segments - len(doc_encodings['input_ids'])))
-                    batch['attention_mask'].append(doc_encodings['attention_mask'] + case_template * (
-                            data_args.max_segments - len(doc_encodings['attention_mask'])))
-            else:
+            ehr_template = [[0] * data_args.max_seg_length]
+            if config.model_type == 'bert':
                 batch = {'input_ids': [], 'attention_mask': [], 'token_type_ids': []}
-                for doc in examples['text']:
-                    doc = re.split('\n{2,}', doc)
-                    doc_encodings = tokenizer(doc[:data_args.max_segments], padding=padding,
-                                              max_length=data_args.max_seg_length, truncation=True)
-                    batch['input_ids'].append(doc_encodings['input_ids'] + case_template * (
-                                data_args.max_segments - len(doc_encodings['input_ids'])))
-                    batch['attention_mask'].append(doc_encodings['attention_mask'] + case_template * (
-                                data_args.max_segments - len(doc_encodings['attention_mask'])))
-                    batch['token_type_ids'].append(doc_encodings['token_type_ids'] + case_template * (
-                                data_args.max_segments - len(doc_encodings['token_type_ids'])))
+                for ehr in examples['text']:
+                    encoded_text = tokenizer(ehr, padding=padding,max_length=data_args.max_seq_length, truncation=True)
+                    # cut text to segments
+                    segments_ids = []
+                    for i in range(0, data_args.max_segments * data_args.max_seg_length, data_args.max_seg_length):
+                        segment_ids = encoded_text['input_ids'][i:i + data_args.max_seg_length]
+                        if not segment_ids:
+                            break
+                        segments_ids.append(segment_ids)
+                    decoded_segments = [tokenizer.decode(segment) for segment in segments_ids]
+                    ehr_encodings = tokenizer(decoded_segments[:data_args.max_segments], padding=padding,
+                                               max_length=data_args.max_seg_length, truncation=True)                    
+                    batch['input_ids'].append(ehr_encodings['input_ids'] + ehr_template * (
+                                                    data_args.max_segments - len(ehr_encodings['input_ids'])))
+                    batch['attention_mask'].append(ehr_encodings['attention_mask'] + ehr_template * (
+                                                    data_args.max_segments - len(ehr_encodings['attention_mask'])))
+                    batch['token_type_ids'].append(ehr_encodings['token_type_ids'] + ehr_template * (
+                                                    data_args.max_segments - len(ehr_encodings['token_type_ids'])))                           
+        
         elif config.model_type in ['longformer', 'big_bird']:
-            cases = []
+            ehrs = []
             max_position_embeddings = config.max_position_embeddings - 2 if config.model_type == 'longformer' \
                 else config.max_position_embeddings
-            for doc in examples['text']:
-                doc = re.split('\n{2,}', doc)
-                cases.append(f' {tokenizer.sep_token} '.join([' '.join(paragraph.split()[:data_args.max_seg_length])
-                                                              for paragraph in doc[:data_args.max_segments]]))
-            batch = tokenizer(cases, padding=padding, max_length=max_position_embeddings, truncation=True)
+            for ehr in examples['text']:
+                ehrs.append(ehr)
+            batch = tokenizer(ehrs, padding=padding, max_length=max_position_embeddings, truncation=True)
             if config.model_type == 'longformer':
-                global_attention_mask = np.zeros((len(cases), max_position_embeddings), dtype=np.int32)
+                global_attention_mask = np.zeros((len(ehrs), max_position_embeddings), dtype=np.int32)
                 # global attention on cls token
                 global_attention_mask[:, 0] = 1
                 batch['global_attention_mask'] = list(global_attention_mask)
         else:
+            #ehrs = []
+            #for ehr in examples['TEXT']:
+            #    ehrs.append(ehr)
+            text=examples['text']
             if data_args.truncate_head:
-                batch = tokenizer(examples['text'], padding=padding, max_length=512, truncation=True)
+
+                batch = tokenizer(text, padding=padding, max_length=512, truncation=True)
             else:
-                encoded_text = tokenizer(examples['text'], add_special_tokens=False)
+                encoded_text = tokenizer(text, add_special_tokens=False)
                 start_positions = [max(0, len(ids_list) - (512 - 2)) for ids_list in encoded_text['input_ids']]
                 last_tokens_list = [ids_list[start_position:] for start_position, ids_list in zip(start_positions, encoded_text['input_ids'])]
                 last_texts = [tokenizer.decode(last_tokens) for last_tokens in last_tokens_list]
                 batch = tokenizer(last_texts, max_length=512, padding="max_length", truncation=True)
 
-        batch["label"] = [label_list.index(labels) for labels in examples["label"]]
 
+        batch["labels"] = [[1 if label in labels else 0 for label in label_list] for labels in (label_string.split(',') for label_string in examples["label"])]
         return batch
 
     if training_args.do_train:
@@ -415,16 +446,20 @@ def main():
     # You can define your custom compute_metrics function. It takes an `EvalPrediction` object (a namedtuple with a
     # predictions and label_ids field) and has to return a dictionary string to float.
     def compute_metrics(p: EvalPrediction):
-        logits = np.nan_to_num(p.predictions[0]) if isinstance(p.predictions, tuple) else np.nan_to_num(p.predictions)
-        y_true = np.array(p.label_ids, dtype=np.int)
-        preds = np.argmax(logits, axis=1)
-        probabilities = np.exp(logits) / np.sum(np.exp(logits), axis=1, keepdims=True)
-        accuracy = np.mean(preds == p.label_ids)
-        macro_f1 = f1_score(y_true=y_true, y_pred=preds, average='macro', zero_division=0)
-        micro_f1 = f1_score(y_true=y_true, y_pred=preds, average='micro', zero_division=0)
-        #macro_auc = roc_auc_score(y_true=y_true, y_score=probabilities, average='macro',multi_class='ovo')
-        #micro_auc = roc_auc_score(y_true=y_true, y_score=probabilities, average='micro',multi_class='ovo')
-        return {'accuracy': accuracy, 'macro-f1': macro_f1, 'micro-f1': micro_f1}#, 'macro-auc': macro_auc, 'micro-auc': micro_auc}
+        y_true = p.label_ids
+        logits = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
+        y_preds = (expit(logits) > 0.5).astype('int32')
+        # Compute regular scores
+        macro_f1 = f1_score(y_true=y_true, y_pred=y_preds, average='macro', zero_division=0)
+        micro_f1 = f1_score(y_true=y_true, y_pred=y_preds, average='micro', zero_division=0)
+        macro_auc = roc_auc_score(y_true=y_true, y_score=logits, average='macro', multi_class='ovo')
+        micro_auc = roc_auc_score(y_true=y_true, y_score=logits, average='micro', multi_class='ovo')
+        #proc&diag
+
+
+
+
+        return {'macro-f1': macro_f1, 'micro-f1': micro_f1, 'macro-auc': macro_auc, 'micro-auc': micro_auc, 'p_at_5': p_at_5_score,'proc-f1': proc_f1, 'diag-f1': diag_f1}
 
     # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
     if data_args.pad_to_max_length:
@@ -435,7 +470,7 @@ def main():
         data_collator = None
 
     # Initialize our Trainer
-    trainer = Trainer(
+    trainer = MultilabelTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,

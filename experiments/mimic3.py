@@ -115,6 +115,12 @@ class DataTrainingArguments:
             "help": "Define downstream task"
         },
     )
+    truncate_head: Optional[bool] = field(
+    default=True,
+    metadata={
+        "help": "Whether to truncate tokens from the head (True) or tail (False) of the sequence."
+    },
+    )
     server_ip: Optional[str] = field(default=None, metadata={"help": "For distant debugging."})
     server_port: Optional[str] = field(default=None, metadata={"help": "For distant debugging."})
 
@@ -377,11 +383,21 @@ def main():
                 global_attention_mask[:, 0] = 1
                 batch['global_attention_mask'] = list(global_attention_mask)
         else:
-            ehrs = []
-            for ehr in examples['TEXT']:
-                ehrs.append(ehr)
-            batch = tokenizer(ehrs, padding=padding, max_length=512, truncation=True)            
-        
+            #ehrs = []
+            #for ehr in examples['TEXT']:
+            #    ehrs.append(ehr)
+            text=examples['TEXT']
+            if data_args.truncate_head:
+
+                batch = tokenizer(text, padding=padding, max_length=512, truncation=True)
+            else:
+                encoded_text = tokenizer(text, add_special_tokens=False)
+                start_positions = [max(0, len(ids_list) - (512 - 2)) for ids_list in encoded_text['input_ids']]
+                last_tokens_list = [ids_list[start_position:] for start_position, ids_list in zip(start_positions, encoded_text['input_ids'])]
+                last_texts = [tokenizer.decode(last_tokens) for last_tokens in last_tokens_list]
+                batch = tokenizer(last_texts, max_length=512, padding="max_length", truncation=True)
+
+
         batch["labels"] = [[1 if label in labels else 0 for label in label_list] for labels in (label_string.split(';') for label_string in examples["LABELS"])]
         return batch
 
