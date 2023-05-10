@@ -2,6 +2,7 @@
 # coding=utf-8
 """ Finetuning models on the diabetes dataset ."""
 from datasets import load_dataset
+from datasets import ClassLabel
 from sklearn.model_selection import train_test_split
 
 import csv
@@ -11,7 +12,7 @@ import random
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
-
+import torch
 import datasets
 import numpy as np
 from datasets import load_dataset
@@ -249,27 +250,27 @@ def main():
     if training_args.do_train:
         train_dataset = train_dataset
     if training_args.do_eval:
-        eval_dataset = test_dataset
-
+        eval_dataset = train_dataset
+    if training_args.do_predict:
+        predict_dataset =test_dataset
 
     # Labels
-    label_list = ['abdominal','advanced-cad','alcohol-abuse','asf-for-mi','creatinine','dietsupp-2mos','drug-abuse','english','hba1c','keto-1yr','major-diabetes','makes-decisions','mi-6mos']
-
-    '''<ABDOMINAL met="met" />
-    <ADVANCED-CAD met="met" />
-    <ALCOHOL-ABUSE met="not met" />
-    <ASP-FOR-MI met="met" />
-    <CREATININE met="not met" />
-    <DIETSUPP-2MOS met="met" />
-    <DRUG-ABUSE met="not met" />
-    <ENGLISH met="met" />
-    <HBA1C met="not met" />
-    <KETO-1YR met="not met" />
-    <MAJOR-DIABETES met="not met" />
-    <MAKES-DECISIONS met="met" />
-    <MI-6MOS met="met" />'''
+    label_list = ['abdominal','advanced-cad','alcohol-abuse','asp-for-mi','creatinine',
+                  'dietsupp-2mos','drug-abuse','english','hba1c','keto-1yr','major-diabetes','makes-decisions','mi-6mos']
+    '''实际上只有['abdominal',
+    'alcohol-abuse',
+    'asp-for-mi',
+    'creatinine',
+    'dietsupp-2mos',
+    'drug-abuse',
+     'hba1c',
+     'keto-1yr',
+     'major-diabetes',
+     'mi-6mos']'''
     # Labels
     num_labels = len(label_list)
+    label_encoder = ClassLabel(num_classes=len(label_list), names=label_list)
+    label_list_encoded = list(range(len(label_list)))
 
 
     
@@ -403,8 +404,10 @@ def main():
                 last_texts = [tokenizer.decode(last_tokens) for last_tokens in last_tokens_list]
                 batch = tokenizer(last_texts, max_length=512, padding="max_length", truncation=True)
 
+        labels_encoded = [[label_encoder.str2int(label) for label in labels] for labels in examples["label"]]
+        batch["label"] = [[1 if label in labels else 0 for label in label_list_encoded] for labels in labels_encoded]
 
-        batch["labels"] = [[1 if label in labels else 0 for label in label_list] for labels in (label_string.split(',') for label_string in examples["label"])]
+
         return batch
 
     if training_args.do_train:
@@ -452,14 +455,13 @@ def main():
         # Compute regular scores
         macro_f1 = f1_score(y_true=y_true, y_pred=y_preds, average='macro', zero_division=0)
         micro_f1 = f1_score(y_true=y_true, y_pred=y_preds, average='micro', zero_division=0)
-        macro_auc = roc_auc_score(y_true=y_true, y_score=logits, average='macro', multi_class='ovo')
-        micro_auc = roc_auc_score(y_true=y_true, y_score=logits, average='micro', multi_class='ovo')
-        #proc&diag
+        # macro_auc = roc_auc_score(y_true=y_true, y_score=logits, average='macro', multi_class='ovo')
+        #micro_auc = roc_auc_score(y_true=y_true, y_score=logits, average='micro', multi_class='ovo')
 
 
 
 
-        return {'macro-f1': macro_f1, 'micro-f1': micro_f1, 'macro-auc': macro_auc, 'micro-auc': micro_auc, 'p_at_5': p_at_5_score,'proc-f1': proc_f1, 'diag-f1': diag_f1}
+        return {'macro-f1': macro_f1, 'micro-f1': micro_f1}
 
     # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
     if data_args.pad_to_max_length:
