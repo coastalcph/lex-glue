@@ -1,7 +1,7 @@
 GPU_NUMBER=0,1
 MODEL_NAME='google/bigbird-roberta-base'
 LOWER_CASE='True'
-BATCH_SIZE=4
+BATCH_SIZE=2
 ACCUMULATION_STEPS=4
 TASK='scotus'
 

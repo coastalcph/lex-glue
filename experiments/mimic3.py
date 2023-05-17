@@ -542,14 +542,14 @@ def main():
         output_predict_file = os.path.join(training_args.output_dir, "test_predictions.csv")
         if trainer.is_world_process_zero():
             with open(output_predict_file, "w") as writer:
-                for index, pred_list in enumerate(predictions[0]):
+                for index, pred_list in enumerate(predictions):
                     pred_line = '\t'.join([f'{pred:.5f}' for pred in pred_list])
                     writer.write(f"{index}\t{pred_line}\n")
 
     # Clean up checkpoints
-    checkpoints = [filepath for filepath in glob.glob(f'{training_args.output_dir}/*/') if '/checkpoint' in filepath]
-    for checkpoint in checkpoints:
-        shutil.rmtree(checkpoint)
+    #checkpoints = [filepath for filepath in glob.glob(f'{training_args.output_dir}/*/') if '/checkpoint' in filepath]
+    #for checkpoint in checkpoints:
+    #    shutil.rmtree(checkpoint)
 
 
 if __name__ == "__main__":

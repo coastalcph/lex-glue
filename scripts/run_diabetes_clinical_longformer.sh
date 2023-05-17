@@ -1,7 +1,7 @@
 GPU_NUMBER=0,1
 MODEL_NAME='yikuan8/Clinical-Longformer'
 LOWER_CASE='True'
-BATCH_SIZE=4
+BATCH_SIZE=2
 ACCUMULATION_STEPS=4
 TASK='diabetes'
 

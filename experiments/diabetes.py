@@ -242,31 +242,24 @@ def main():
     dataset = load_dataset('json', data_files='/home/ghan/datasets/diabetes.json')
     dataset_length = len(dataset['train'])
     indices = list(range(dataset_length))
-    train_indices, test_indices = train_test_split(indices, test_size=0.2, random_state=42)
+    train_indices, temp_test_indices = train_test_split(indices, test_size=0.3, random_state=42)
+    val_indices, test_indices = train_test_split(temp_test_indices, test_size=0.5, random_state=42)
     train_dataset = dataset['train'].select(train_indices)
+    val_dataset=dataset['train'].select(val_indices)
     test_dataset = dataset['train'].select(test_indices)
 
 
     if training_args.do_train:
         train_dataset = train_dataset
     if training_args.do_eval:
-        eval_dataset = train_dataset
+        eval_dataset = val_dataset
     if training_args.do_predict:
         predict_dataset =test_dataset
 
     # Labels
     label_list = ['abdominal','advanced-cad','alcohol-abuse','asp-for-mi','creatinine',
                   'dietsupp-2mos','drug-abuse','english','hba1c','keto-1yr','major-diabetes','makes-decisions','mi-6mos']
-    '''实际上只有['abdominal',
-    'alcohol-abuse',
-    'asp-for-mi',
-    'creatinine',
-    'dietsupp-2mos',
-    'drug-abuse',
-     'hba1c',
-     'keto-1yr',
-     'major-diabetes',
-     'mi-6mos']'''
+    label_list =['abdominal','alcohol-abuse','asp-for-mi','creatinine','dietsupp-2mos','drug-abuse','hba1c','keto-1yr','major-diabetes','mi-6mos']
     # Labels
     num_labels = len(label_list)
     label_encoder = ClassLabel(num_classes=len(label_list), names=label_list)
@@ -480,7 +473,7 @@ def main():
         compute_metrics=compute_metrics,
         tokenizer=tokenizer,
         data_collator=data_collator,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=5)]
     )
 
     # Training
@@ -518,7 +511,6 @@ def main():
     if training_args.do_predict:
         logger.info("*** Predict ***")
         predictions, labels, metrics = trainer.predict(predict_dataset, metric_key_prefix="predict")
-
         max_predict_samples = (
             data_args.max_predict_samples if data_args.max_predict_samples is not None else len(predict_dataset)
         )
@@ -526,18 +518,24 @@ def main():
 
         trainer.log_metrics("predict", metrics)
         trainer.save_metrics("predict", metrics)
-
+        
+        output_labels_file = os.path.join(training_args.output_dir, "test_labels.csv")
         output_predict_file = os.path.join(training_args.output_dir, "test_predictions.csv")
         if trainer.is_world_process_zero():
-            with open(output_predict_file, "w") as writer:
-                for index, pred_list in enumerate(predictions[0]):
-                    pred_line = '\t'.join([f'{pred:.5f}' for pred in pred_list])
-                    writer.write(f"{index}\t{pred_line}\n")
+            with open(output_predict_file, "w") as predict_writer, open(output_labels_file, "w") as labels_writer:
+                predict_writer_csv = csv.writer(predict_writer, delimiter='\t')
+                labels_writer_csv = csv.writer(labels_writer, delimiter='\t')
+                for index, (pred_list, label_list) in enumerate(zip(predictions, labels)):
+                    pred_line = [f'{pred:.5f}' for pred in pred_list]
+                    label_line = [str(label) for label in label_list]
+
+                    predict_writer_csv.writerow([index] + pred_line)
+                    labels_writer_csv.writerow([index] + label_line)
 
     # Clean up checkpoints
-    checkpoints = [filepath for filepath in glob.glob(f'{training_args.output_dir}/*/') if '/checkpoint' in filepath]
-    for checkpoint in checkpoints:
-        shutil.rmtree(checkpoint)
+    #checkpoints = [filepath for filepath in glob.glob(f'{training_args.output_dir}/*/') if '/checkpoint' in filepath]
+    #for checkpoint in checkpoints:
+    #    shutil.rmtree(checkpoint)
 
 
 if __name__ == "__main__":
