@@ -239,7 +239,7 @@ def main():
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
-    dataset = load_dataset('json', data_files='/home/ghan/datasets/diabetes.json')
+    dataset = load_dataset('json', data_files='/home/ghan/datasets/diabetes2.json')
     dataset_length = len(dataset['train'])
     indices = list(range(dataset_length))
     train_indices, temp_test_indices = train_test_split(indices, test_size=0.3, random_state=42)
@@ -257,8 +257,7 @@ def main():
         predict_dataset =test_dataset
 
     # Labels
-    label_list = ['abdominal','advanced-cad','alcohol-abuse','asp-for-mi','creatinine',
-                  'dietsupp-2mos','drug-abuse','english','hba1c','keto-1yr','major-diabetes','makes-decisions','mi-6mos']
+
     label_list =['abdominal','alcohol-abuse','asp-for-mi','creatinine','dietsupp-2mos','drug-abuse','hba1c','keto-1yr','major-diabetes','mi-6mos']
     # Labels
     num_labels = len(label_list)
@@ -448,9 +447,6 @@ def main():
         # Compute regular scores
         macro_f1 = f1_score(y_true=y_true, y_pred=y_preds, average='macro', zero_division=0)
         micro_f1 = f1_score(y_true=y_true, y_pred=y_preds, average='micro', zero_division=0)
-        # macro_auc = roc_auc_score(y_true=y_true, y_score=logits, average='macro', multi_class='ovo')
-        #micro_auc = roc_auc_score(y_true=y_true, y_score=logits, average='micro', multi_class='ovo')
-
 
 
 
@@ -516,6 +512,14 @@ def main():
         )
         metrics["predict_samples"] = min(max_predict_samples, len(predict_dataset))
 
+        y_preds = (expit(predictions) > 0.5).astype('int32')
+        for group in [1, 2, 3, 4]:
+    # Get the indices of samples in the current group
+            indices = [i for i, x in enumerate(eval_dataset['length_feature']) if x == group]
+    # Compute the micro-F1 score for the current group
+            micro_f1 = f1_score(y_true=labels[indices], y_pred=y_preds[indices], average='micro', zero_division=0)
+    # Add the score to the metrics dictionary
+            metrics[f'micro-f1_group_{group}'] = micro_f1
         trainer.log_metrics("predict", metrics)
         trainer.save_metrics("predict", metrics)
         

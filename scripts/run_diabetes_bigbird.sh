@@ -1,5 +1,5 @@
 GPU_NUMBER=0,1
-MODEL_NAME='google/bigbird-roberta-base'
+MODEL_NAME='/home/ghan/lex-glue/logs/diabetes/google/bigbird-roberta-base/seed_5'
 LOWER_CASE='True'
 BATCH_SIZE=2
 ACCUMULATION_STEPS=4
