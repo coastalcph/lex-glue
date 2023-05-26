@@ -238,14 +238,14 @@ def main():
 
 
     if training_args.do_train:
-        train_dataset = load_dataset("csv", data_files="/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/train_50.csv",name=data_args.task)
+        train_dataset = load_dataset("json", data_files="/home/ghan/datasets/mimic_train50.json",name=data_args.task)
         train_dataset=train_dataset['train']
 
     if training_args.do_eval:
-        eval_dataset = load_dataset("csv", data_files="/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/dev_50.csv",name=data_args.task)
+        eval_dataset = load_dataset("json", data_files="/home/ghan/datasets/mimic_dev50.json",name=data_args.task)
         eval_dataset=eval_dataset['train']
     if training_args.do_predict:
-        predict_dataset = load_dataset("csv", data_files="/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/test_50.csv",name=data_args.task)
+        predict_dataset = load_dataset("json", data_files="/home/ghan/datasets/mimic_test50.json",name=data_args.task)
         predict_dataset=predict_dataset['train']
     # Labels
     with open("/home/ghan/caml-mimic-fixed-/mimicdata/mimic3/TOP_50_CODES.csv", 'r') as f:
@@ -530,22 +530,35 @@ def main():
     if training_args.do_predict:
         logger.info("*** Predict ***")
         predictions, labels, metrics = trainer.predict(predict_dataset, metric_key_prefix="predict")
-
+        if model_args.hierarchical:
+            predictions=predictions[0]
         max_predict_samples = (
             data_args.max_predict_samples if data_args.max_predict_samples is not None else len(predict_dataset)
         )
         metrics["predict_samples"] = min(max_predict_samples, len(predict_dataset))
-
+        y_preds = (expit(predictions) > 0.5).astype('int32')
+        for group in [1, 2, 3,4]:
+    # Get the indices of samples in the current group
+            indices = [i for i, x in enumerate(eval_dataset['length_feature']) if x == group]
+    # Compute the micro-F1 score for the current group
+            micro_f1 = f1_score(y_true=labels[indices], y_pred=y_preds[indices], average='micro', zero_division=0)
+    # Add the score to the metrics dictionary
+            metrics[f'micro-f1_group_{group}'] = micro_f1        
         trainer.log_metrics("predict", metrics)
         trainer.save_metrics("predict", metrics)
 
+        output_labels_file = os.path.join(training_args.output_dir, "test_labels.csv")
         output_predict_file = os.path.join(training_args.output_dir, "test_predictions.csv")
         if trainer.is_world_process_zero():
-            with open(output_predict_file, "w") as writer:
-                for index, pred_list in enumerate(predictions):
-                    pred_line = '\t'.join([f'{pred:.5f}' for pred in pred_list])
-                    writer.write(f"{index}\t{pred_line}\n")
+            with open(output_predict_file, "w") as predict_writer, open(output_labels_file, "w") as labels_writer:
+                predict_writer_csv = csv.writer(predict_writer, delimiter='\t')
+                labels_writer_csv = csv.writer(labels_writer, delimiter='\t')
+                for index, (pred_list, label_list) in enumerate(zip(predictions, labels)):
+                    pred_line = [f'{pred:.5f}' for pred in pred_list]
+                    label_line = [str(label) for label in label_list]
 
+                    predict_writer_csv.writerow([index] + pred_line)
+                    labels_writer_csv.writerow([index] + label_line)
     # Clean up checkpoints
     #checkpoints = [filepath for filepath in glob.glob(f'{training_args.output_dir}/*/') if '/checkpoint' in filepath]
     #for checkpoint in checkpoints:

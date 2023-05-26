@@ -507,13 +507,18 @@ def main():
     if training_args.do_predict:
         logger.info("*** Predict ***")
         predictions, labels, metrics = trainer.predict(predict_dataset, metric_key_prefix="predict")
+        if model_args.hierarchical:
+            predictions=predictions[0]
         max_predict_samples = (
             data_args.max_predict_samples if data_args.max_predict_samples is not None else len(predict_dataset)
         )
         metrics["predict_samples"] = min(max_predict_samples, len(predict_dataset))
 
+        '''for i in range(len(predictions)):
+            print(predictions[i].dtype)
+            print(predictions[i].shape)'''
         y_preds = (expit(predictions) > 0.5).astype('int32')
-        for group in [1, 2, 3, 4]:
+        for group in [1, 2, 3,4]:
     # Get the indices of samples in the current group
             indices = [i for i, x in enumerate(eval_dataset['length_feature']) if x == group]
     # Compute the micro-F1 score for the current group

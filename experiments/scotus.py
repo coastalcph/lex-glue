@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # coding=utf-8
 """ Finetuning models on SCOTUS (e.g. Bert, RoBERTa, LEGAL-BERT)."""
-
+import csv
+from scipy.special import expit
+from datasets import load_from_disk
 import logging
 import os
 import random
@@ -233,13 +235,13 @@ def main():
     # download the dataset.
     # Downloading and loading eurlex dataset from the hub.
     if training_args.do_train:
-        train_dataset = load_dataset("lex_glue", "scotus", split="train", cache_dir=model_args.cache_dir)
+        train_dataset = load_from_disk("/home/ghan/datasets/scotus/train")
 
     if training_args.do_eval:
-        eval_dataset = load_dataset("lex_glue", "scotus", split="validation", cache_dir=model_args.cache_dir)
+        eval_dataset = load_from_disk("/home/ghan/datasets/scotus/validation")
 
     if training_args.do_predict:
-        predict_dataset = load_dataset("lex_glue", "scotus", split="test", cache_dir=model_args.cache_dir)
+        predict_dataset = load_from_disk("/home/ghan/datasets/scotus/test")
 
     # Labels
     label_list = list(range(14))
@@ -481,21 +483,38 @@ def main():
     if training_args.do_predict:
         logger.info("*** Predict ***")
         predictions, labels, metrics = trainer.predict(predict_dataset, metric_key_prefix="predict")
-
+        if model_args.hierarchical:
+            predictions = predictions[0]
         max_predict_samples = (
             data_args.max_predict_samples if data_args.max_predict_samples is not None else len(predict_dataset)
         )
         metrics["predict_samples"] = min(max_predict_samples, len(predict_dataset))
 
+        # In multiclass setting, we select the class with the highest probability.
+        y_preds = np.argmax(predictions, axis=1)
+        for group in [1, 2, 3, 4]:
+            indices = [i for i, x in enumerate(predict_dataset['length_feature']) if x == group]
+            group_accuracy = accuracy_score(y_true=labels[indices], y_pred=y_preds[indices])
+            metrics[f'accuracy_group_{group}'] = group_accuracy
+
+        overall_accuracy = accuracy_score(y_true=labels, y_pred=y_preds)
+        metrics['overall_accuracy'] = overall_accuracy
+
         trainer.log_metrics("predict", metrics)
         trainer.save_metrics("predict", metrics)
 
+        '''output_labels_file = os.path.join(training_args.output_dir, "test_labels.csv")
         output_predict_file = os.path.join(training_args.output_dir, "test_predictions.csv")
         if trainer.is_world_process_zero():
-            with open(output_predict_file, "w") as writer:
-                for index, pred_list in enumerate(predictions):
-                    pred_line = '\t'.join([f'{pred:.5f}' for pred in pred_list])
-                    writer.write(f"{index}\t{pred_line}\n")
+            with open(output_predict_file, "w") as predict_writer, open(output_labels_file, "w") as labels_writer:
+                predict_writer_csv = csv.writer(predict_writer, delimiter='\t')
+                labels_writer_csv = csv.writer(labels_writer, delimiter='\t')
+                for index, (pred, label) in enumerate(zip(y_preds, labels)):
+                    # No need to write all classes' probabilities in multiclass setting, 
+                    # just write the predicted class.
+                    predict_writer_csv.writerow([index, pred])
+                    labels_writer_csv.writerow([index, label])
+                    labels_writer_csv.writerow([index] + label_line)'''
 
     # Clean up checkpoints
     #checkpoints = [filepath for filepath in glob.glob(f'{training_args.output_dir}/*/') if '/checkpoint' in filepath]
