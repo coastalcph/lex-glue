@@ -520,7 +520,7 @@ def main():
         y_preds = (expit(predictions) > 0.5).astype('int32')
         for group in [1, 2, 3,4]:
     # Get the indices of samples in the current group
-            indices = [i for i, x in enumerate(eval_dataset['length_feature']) if x == group]
+            indices = [i for i, x in enumerate(predict_dataset['length_feature']) if x == group]
     # Compute the micro-F1 score for the current group
             micro_f1 = f1_score(y_true=labels[indices], y_pred=y_preds[indices], average='micro', zero_division=0)
     # Add the score to the metrics dictionary
