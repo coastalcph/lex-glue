@@ -7,6 +7,7 @@ import os
 import random
 import sys
 import torch
+import copy
 from dataclasses import dataclass, field
 from typing import Optional
 from typing import List
@@ -14,7 +15,7 @@ import datasets
 import numpy as np
 from datasets import load_dataset
 from sklearn.metrics import f1_score
-from CLtrainer import MultilabelTrainer
+from CLtrainer import CurriculumLearningTrainer,MultilabelTrainer
 from scipy.special import expit
 from torch import nn
 import glob
@@ -36,6 +37,7 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
+from torch.utils.data import DataLoader
 from transformers.utils.versions import require_version
 from HCBert import HierarchicalConvolutionalBert
 
@@ -77,6 +79,11 @@ class DataTrainingArguments:
             "help": "The maximum segment (paragraph) length to be considered. Segments longer "
                     "than this will be truncated, sequences shorter will be padded."
         },
+    )
+    stride: List[int] = field(
+        default_factory=lambda: [64, 128, 256],
+        metadata={
+            "help": "The overlap length between segments"}
     )
     overwrite_cache: bool = field(
         default=False, metadata={"help": "Overwrite the cached preprocessed datasets or not."}
@@ -140,6 +147,12 @@ class ModelArguments:
     convolutional: bool = field(
         default=False, metadata={"help": "Whether to use a hierarchical variant or not"}
     )
+    curriculum: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to use curriculum learning"
+        },
+    )
     config_name: Optional[str] = field(
         default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
     )
@@ -178,6 +191,9 @@ def main():
 
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    # Make a copy of training_args
+    pre_training_args = copy.deepcopy(training_args)
+    pre_training_args.num_train_epochs = 3
 
     # Fix boolean parameter
     if model_args.do_lower_case == 'False' or not model_args.do_lower_case:
@@ -243,7 +259,7 @@ def main():
     if training_args.do_train:
         train_dataset = load_dataset("json", data_files="/home/ghan/datasets/mimic_train50.json",name=data_args.task)
         train_dataset=train_dataset['train']
-
+        #train_dataset = train_dataset.shuffle(seed=42).select(range(int(len(train_dataset) * 0.05)))      
     if training_args.do_eval:
         eval_dataset = load_dataset("json", data_files="/home/ghan/datasets/mimic_dev50.json",name=data_args.task)
         eval_dataset=eval_dataset['train']
@@ -302,14 +318,14 @@ def main():
             use_auth_token=True if model_args.use_auth_token else None,
         )
 
-    if model_args.hierarchical:
-        if config.model_type == 'bert':
-                model = HierarchicalConvolutionalBert(encoder=segment_encoder,
+
+    if config.model_type == 'bert':
+            model = HierarchicalConvolutionalBert(encoder=segment_encoder,
                                              max_segments=data_args.max_segments,
                                              max_segment_length=data_args.max_seg_length,
                                              num_labels=num_labels)
-        else:
-                raise NotImplementedError(f"{config.model_type} is no supported yet!")
+    else:
+            raise NotImplementedError(f"{config.model_type} is no supported yet!")
 
     #if training_args.do_predict and not training_args.do_eval and not training_args.do_train:
     #model.load_state_dict(torch.load('/home/ghan/lex-glue/logs/Convolutional/bert-base-uncased/seed_1/pytorch_model.bin'))
@@ -426,16 +442,11 @@ def main():
     # You can define your custom compute_metrics function. It takes an `EvalPrediction` object (a namedtuple with a
     # predictions and label_ids field) and has to return a dictionary string to float.
     def compute_metrics(p: EvalPrediction):
-
         y_true = p.label_ids
         logits = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
-
         y_preds = (expit(logits) > 0.5).astype('int32')
-
-        # Compute regular scores
         macro_f1 = f1_score(y_true=y_true, y_pred=y_preds, average='macro', zero_division=0)
         micro_f1 = f1_score(y_true=y_true, y_pred=y_preds, average='micro', zero_division=0)
-
         return {'macro-f1': macro_f1, 'micro-f1': micro_f1}
 
     # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
@@ -448,16 +459,42 @@ def main():
         data_collator = None
 
     # Initialize our Trainer
-    trainer = MultilabelTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset if training_args.do_train else None,
-        eval_dataset=eval_dataset if training_args.do_eval else None,
-        compute_metrics=compute_metrics,
-        tokenizer=tokenizer,
-        data_collator=data_collator,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
-    )
+    if model_args.curriculum and training_args.do_train:
+        pre_trainer = CurriculumLearningTrainer(
+            model=model,
+            args=pre_training_args,
+            train_dataset=train_dataset if training_args.do_train else None,
+            eval_dataset=eval_dataset if training_args.do_eval else None,
+            compute_metrics=compute_metrics,
+            tokenizer=tokenizer,
+            data_collator=data_collator,
+            callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]
+        )
+        pre_trainer.train()
+        ordering = sorted(range(len(train_dataset)), key=lambda i: pre_trainer.losses[i])
+        ordered_train_dataset = [train_dataset[i] for i in ordering]
+  
+        trainer = MultilabelTrainer(
+            model=model,
+            args=training_args,
+            train_dataset=ordered_train_dataset,
+            eval_dataset=eval_dataset if training_args.do_eval else None,
+            compute_metrics=compute_metrics,
+            tokenizer=tokenizer,
+            data_collator=data_collator,
+            callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
+        )        
+    else:
+        trainer = MultilabelTrainer(
+            model=model,
+            args=training_args,
+            train_dataset=train_dataset if training_args.do_train else None,
+            eval_dataset=eval_dataset if training_args.do_eval else None,
+            compute_metrics=compute_metrics,
+            tokenizer=tokenizer,
+            data_collator=data_collator,
+            callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
+        )
 
     # Training
     if training_args.do_train:
@@ -466,6 +503,7 @@ def main():
             checkpoint = training_args.resume_from_checkpoint
         elif last_checkpoint is not None:
             checkpoint = last_checkpoint
+
         train_result = trainer.train(resume_from_checkpoint=checkpoint)
         metrics = train_result.metrics
         max_train_samples = (

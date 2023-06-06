@@ -47,7 +47,7 @@ class HierarchicalConvolutionalBert(nn.Module):
         output_list = []
         for i in range(1,4):
             input_ids_i = eval("input_ids_" + str(i))
-            batch=input_ids_i.size(0)
+            #batch=input_ids_i.size(0)
             attention_mask_i = eval("attention_mask_" + str(i))
             token_type_ids_i = eval("token_type_ids_" + str(i))          
             input_ids_i = input_ids_i.contiguous().view(-1, input_ids_i.size(-1))
@@ -58,7 +58,7 @@ class HierarchicalConvolutionalBert(nn.Module):
                                            attention_mask=attention_mask_i,
                                            token_type_ids=token_type_ids_i)[0]
 
-            encoder_outputs = encoder_outputs.contiguous().view(batch, self.max_segments[i-1],
+            encoder_outputs = encoder_outputs.contiguous().view(-1, self.max_segments[i-1],
                                                                 self.max_segment_length[i-1],
                                                                 self.hidden_size)
 
