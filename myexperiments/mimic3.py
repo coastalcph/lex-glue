@@ -15,7 +15,7 @@ import datasets
 import numpy as np
 from datasets import load_dataset
 from sklearn.metrics import f1_score
-from CLtrainer import CurriculumLearningTrainer,MultilabelTrainer
+from trainer import MultilabelTrainer
 from scipy.special import expit
 from torch import nn
 import glob
@@ -83,7 +83,7 @@ class DataTrainingArguments:
     stride: List[int] = field(
         default_factory=lambda: [64, 128, 256],
         metadata={
-            "help": "The overlap length between segments"}
+            "help": "The stride between segments"}
     )
     overwrite_cache: bool = field(
         default=False, metadata={"help": "Overwrite the cached preprocessed datasets or not."}
@@ -123,8 +123,8 @@ class DataTrainingArguments:
         },
     )
     truncate_head: Optional[bool] = field(
-    default=True,
-    metadata={
+        default=True,
+        metadata={
         "help": "Whether to truncate tokens from the head (True) or tail (False) of the sequence."
     },
     )
@@ -191,9 +191,7 @@ def main():
 
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-    # Make a copy of training_args
-    pre_training_args = copy.deepcopy(training_args)
-    pre_training_args.num_train_epochs = 3
+
 
     # Fix boolean parameter
     if model_args.do_lower_case == 'False' or not model_args.do_lower_case:
@@ -309,7 +307,7 @@ def main():
         use_auth_token=True if model_args.use_auth_token else None,
     )
 
-# 这里取bert 与源代码相比不再增加全连接层 转而从HierarchicalConvolutionalBert里增加全连接层
+# define encoder
     segment_encoder = AutoModel.from_pretrained(
             model_args.model_name_or_path,
             config=config,
@@ -319,7 +317,7 @@ def main():
         )
 
 
-    if config.model_type == 'bert':
+    if config.model_type in ['bert','distilbert','roberta']:
             model = HierarchicalConvolutionalBert(encoder=segment_encoder,
                                              max_segments=data_args.max_segments,
                                              max_segment_length=data_args.max_seg_length,
@@ -343,63 +341,111 @@ def main():
 
         ehr_template_1 = [[0] * data_args.max_seg_length[0]]
         ehr_template_2 = [[0] * data_args.max_seg_length[1]]
-        ehr_template_3 = [[0] * data_args.max_seg_length[2]]         
-        batch = {'input_ids_1': [], 'attention_mask_1': [], 'token_type_ids_1': [],
-                         'input_ids_2': [], 'attention_mask_2': [], 'token_type_ids_2': [],
-                         'input_ids_3': [], 'attention_mask_3': [], 'token_type_ids_3': []}
-        for ehr in examples['TEXT']:
-            encoded_text = tokenizer(ehr, padding=padding,max_length=data_args.max_seq_length, truncation=True)
-                    # cut text to 64 segments
-            segments_ids = []
-            for i in range(0, data_args.max_segments[0] * data_args.max_seg_length[0], data_args.max_seg_length[0]):
-                segment_ids = encoded_text['input_ids'][i:i + data_args.max_seg_length[0]]
-                if not segment_ids:
-                    break
-                segments_ids.append(segment_ids)
-            decoded_segments = [tokenizer.decode(segment) for segment in segments_ids]
-            ehr_encodings = tokenizer(decoded_segments[:data_args.max_segments[0]], padding=padding,
-                                               max_length=data_args.max_seg_length[0], truncation=True)                    
-            batch['input_ids_1'].append(ehr_encodings['input_ids'] + ehr_template_1 * (
-                                                    data_args.max_segments[0] - len(ehr_encodings['input_ids'])))
-            batch['attention_mask_1'].append(ehr_encodings['attention_mask'] + ehr_template_1 * (
-                                                    data_args.max_segments[0] - len(ehr_encodings['attention_mask'])))
-            batch['token_type_ids_1'].append(ehr_encodings['token_type_ids'] + ehr_template_1 * (
-                                                    data_args.max_segments[0] - len(ehr_encodings['token_type_ids'])))   
-                    
-                    # cut text to 32 segments
-            segments_ids = []
-            for i in range(0, data_args.max_segments[1] * data_args.max_seg_length[1], data_args.max_seg_length[1]):
-                segment_ids = encoded_text['input_ids'][i:i + data_args.max_seg_length[1]]
-                if not segment_ids:
-                    break
-                segments_ids.append(segment_ids)
-            decoded_segments = [tokenizer.decode(segment) for segment in segments_ids]
-            ehr_encodings = tokenizer(decoded_segments[:data_args.max_segments[1]], padding=padding,
-                                               max_length=data_args.max_seg_length[1], truncation=True)                    
-            batch['input_ids_2'].append(ehr_encodings['input_ids'] + ehr_template_2 * (
-                                                    data_args.max_segments[1] - len(ehr_encodings['input_ids'])))
-            batch['attention_mask_2'].append(ehr_encodings['attention_mask'] + ehr_template_2 * (
-                                                    data_args.max_segments[1] - len(ehr_encodings['attention_mask'])))
-            batch['token_type_ids_2'].append(ehr_encodings['token_type_ids'] + ehr_template_2 * (
-                                                    data_args.max_segments[1] - len(ehr_encodings['token_type_ids'])))  
-                    # cut text to 16 segments
-            segments_ids = []
-            for i in range(0, data_args.max_segments[2] * data_args.max_seg_length[2], data_args.max_seg_length[2]):
-                segment_ids = encoded_text['input_ids'][i:i + data_args.max_seg_length[2]]
-                if not segment_ids:
-                    break
-                segments_ids.append(segment_ids)
-            decoded_segments = [tokenizer.decode(segment) for segment in segments_ids]
-            ehr_encodings = tokenizer(decoded_segments[:data_args.max_segments[2]], padding=padding,
-                                               max_length=data_args.max_seg_length[2], truncation=True)                    
-            batch['input_ids_3'].append(ehr_encodings['input_ids'] + ehr_template_3 * (
-                                                    data_args.max_segments[2] - len(ehr_encodings['input_ids'])))
-            batch['attention_mask_3'].append(ehr_encodings['attention_mask'] + ehr_template_3 * (
-                                                    data_args.max_segments[2] - len(ehr_encodings['attention_mask'])))
-            batch['token_type_ids_3'].append(ehr_encodings['token_type_ids'] + ehr_template_3 * (
-                                                    data_args.max_segments[2] - len(ehr_encodings['token_type_ids'])))  
-
-
+        ehr_template_3 = [[0] * data_args.max_seg_length[2]]
+        if config.model_type=='bert':         
+            batch = {'input_ids_1': [], 'attention_mask_1': [], 'token_type_ids_1': [],
+                            'input_ids_2': [], 'attention_mask_2': [], 'token_type_ids_2': [],
+                            'input_ids_3': [], 'attention_mask_3': [], 'token_type_ids_3': []}
+            for ehr in examples['TEXT']:
+                encoded_text = tokenizer(ehr, padding=padding,max_length=data_args.max_seq_length, truncation=True)
+                        # cut text to 64 segments
+                segments_ids = []
+                for i in range(0, data_args.max_segments[0] * data_args.max_seg_length[0], data_args.max_seg_length[0]):
+                    segment_ids = encoded_text['input_ids'][i:i + data_args.max_seg_length[0]]
+                    if not segment_ids:
+                        break
+                    segments_ids.append(segment_ids)
+                decoded_segments = [tokenizer.decode(segment) for segment in segments_ids]
+                ehr_encodings = tokenizer(decoded_segments[:data_args.max_segments[0]], padding=padding,
+                                                max_length=data_args.max_seg_length[0], truncation=True)                    
+                batch['input_ids_1'].append(ehr_encodings['input_ids'] + ehr_template_1 * (
+                                                        data_args.max_segments[0] - len(ehr_encodings['input_ids'])))
+                batch['attention_mask_1'].append(ehr_encodings['attention_mask'] + ehr_template_1 * (
+                                                        data_args.max_segments[0] - len(ehr_encodings['attention_mask'])))
+                batch['token_type_ids_1'].append(ehr_encodings['token_type_ids'] + ehr_template_1 * (
+                                                        data_args.max_segments[0] - len(ehr_encodings['token_type_ids'])))   
+                        
+                        # cut text to 32 segments
+                segments_ids = []
+                for i in range(0, data_args.max_segments[1] * data_args.max_seg_length[1], data_args.max_seg_length[1]):
+                    segment_ids = encoded_text['input_ids'][i:i + data_args.max_seg_length[1]]
+                    if not segment_ids:
+                        break
+                    segments_ids.append(segment_ids)
+                decoded_segments = [tokenizer.decode(segment) for segment in segments_ids]
+                ehr_encodings = tokenizer(decoded_segments[:data_args.max_segments[1]], padding=padding,
+                                                max_length=data_args.max_seg_length[1], truncation=True)                    
+                batch['input_ids_2'].append(ehr_encodings['input_ids'] + ehr_template_2 * (
+                                                        data_args.max_segments[1] - len(ehr_encodings['input_ids'])))
+                batch['attention_mask_2'].append(ehr_encodings['attention_mask'] + ehr_template_2 * (
+                                                        data_args.max_segments[1] - len(ehr_encodings['attention_mask'])))
+                batch['token_type_ids_2'].append(ehr_encodings['token_type_ids'] + ehr_template_2 * (
+                                                        data_args.max_segments[1] - len(ehr_encodings['token_type_ids'])))  
+                        # cut text to 16 segments
+                segments_ids = []
+                for i in range(0, data_args.max_segments[2] * data_args.max_seg_length[2], data_args.max_seg_length[2]):
+                    segment_ids = encoded_text['input_ids'][i:i + data_args.max_seg_length[2]]
+                    if not segment_ids:
+                        break
+                    segments_ids.append(segment_ids)
+                decoded_segments = [tokenizer.decode(segment) for segment in segments_ids]
+                ehr_encodings = tokenizer(decoded_segments[:data_args.max_segments[2]], padding=padding,
+                                                max_length=data_args.max_seg_length[2], truncation=True)                    
+                batch['input_ids_3'].append(ehr_encodings['input_ids'] + ehr_template_3 * (
+                                                        data_args.max_segments[2] - len(ehr_encodings['input_ids'])))
+                batch['attention_mask_3'].append(ehr_encodings['attention_mask'] + ehr_template_3 * (
+                                                        data_args.max_segments[2] - len(ehr_encodings['attention_mask'])))
+                batch['token_type_ids_3'].append(ehr_encodings['token_type_ids'] + ehr_template_3 * (
+                                                        data_args.max_segments[2] - len(ehr_encodings['token_type_ids'])))
+        else:
+                batch = {'input_ids_1': [], 'attention_mask_1': [],
+                        'input_ids_2': [], 'attention_mask_2': [], 
+                        'input_ids_3': [], 'attention_mask_3': []}
+                for ehr in examples['TEXT']:
+                    encoded_text = tokenizer(ehr, padding=padding,max_length=data_args.max_seq_length, truncation=True)
+                            # cut text to 64 segments
+                    segments_ids = []
+                    for i in range(0, data_args.max_segments[0] * data_args.max_seg_length[0], data_args.max_seg_length[0]):
+                        segment_ids = encoded_text['input_ids'][i:i + data_args.max_seg_length[0]]
+                        if not segment_ids:
+                            break
+                        segments_ids.append(segment_ids)
+                    decoded_segments = [tokenizer.decode(segment) for segment in segments_ids]
+                    ehr_encodings = tokenizer(decoded_segments[:data_args.max_segments[0]], padding=padding,
+                                                    max_length=data_args.max_seg_length[0], truncation=True)                    
+                    batch['input_ids_1'].append(ehr_encodings['input_ids'] + ehr_template_1 * (
+                                                            data_args.max_segments[0] - len(ehr_encodings['input_ids'])))
+                    batch['attention_mask_1'].append(ehr_encodings['attention_mask'] + ehr_template_1 * (
+                                                            data_args.max_segments[0] - len(ehr_encodings['attention_mask'])))
+                            
+                            # cut text to 32 segments
+                    segments_ids = []
+                    for i in range(0, data_args.max_segments[1] * data_args.max_seg_length[1], data_args.max_seg_length[1]):
+                        segment_ids = encoded_text['input_ids'][i:i + data_args.max_seg_length[1]]
+                        if not segment_ids:
+                            break
+                        segments_ids.append(segment_ids)
+                    decoded_segments = [tokenizer.decode(segment) for segment in segments_ids]
+                    ehr_encodings = tokenizer(decoded_segments[:data_args.max_segments[1]], padding=padding,
+                                                    max_length=data_args.max_seg_length[1], truncation=True)                    
+                    batch['input_ids_2'].append(ehr_encodings['input_ids'] + ehr_template_2 * (
+                                                            data_args.max_segments[1] - len(ehr_encodings['input_ids'])))
+                    batch['attention_mask_2'].append(ehr_encodings['attention_mask'] + ehr_template_2 * (
+                                                            data_args.max_segments[1] - len(ehr_encodings['attention_mask'])))
+                            # cut text to 16 segments
+                    segments_ids = []
+                    for i in range(0, data_args.max_segments[2] * data_args.max_seg_length[2], data_args.max_seg_length[2]):
+                        segment_ids = encoded_text['input_ids'][i:i + data_args.max_seg_length[2]]
+                        if not segment_ids:
+                            break
+                        segments_ids.append(segment_ids)
+                    decoded_segments = [tokenizer.decode(segment) for segment in segments_ids]
+                    ehr_encodings = tokenizer(decoded_segments[:data_args.max_segments[2]], padding=padding,
+                                                    max_length=data_args.max_seg_length[2], truncation=True)                    
+                    batch['input_ids_3'].append(ehr_encodings['input_ids'] + ehr_template_3 * (
+                                                            data_args.max_segments[2] - len(ehr_encodings['input_ids'])))
+                    batch['attention_mask_3'].append(ehr_encodings['attention_mask'] + ehr_template_3 * (
+                                                            data_args.max_segments[2] - len(ehr_encodings['attention_mask'])))              
         batch["labels"] = [[1 if label in labels else 0 for label in label_list] for labels in (label_string.split(';') for label_string in examples["LABELS"])]
         return batch
 
@@ -458,34 +504,8 @@ def main():
     else:
         data_collator = None
 
-    # Initialize our Trainer
-    if model_args.curriculum and training_args.do_train:
-        pre_trainer = CurriculumLearningTrainer(
-            model=model,
-            args=pre_training_args,
-            train_dataset=train_dataset if training_args.do_train else None,
-            eval_dataset=eval_dataset if training_args.do_eval else None,
-            compute_metrics=compute_metrics,
-            tokenizer=tokenizer,
-            data_collator=data_collator,
-            callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]
-        )
-        pre_trainer.train()
-        ordering = sorted(range(len(train_dataset)), key=lambda i: pre_trainer.losses[i])
-        ordered_train_dataset = [train_dataset[i] for i in ordering]
-  
-        trainer = MultilabelTrainer(
-            model=model,
-            args=training_args,
-            train_dataset=ordered_train_dataset,
-            eval_dataset=eval_dataset if training_args.do_eval else None,
-            compute_metrics=compute_metrics,
-            tokenizer=tokenizer,
-            data_collator=data_collator,
-            callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
-        )        
-    else:
-        trainer = MultilabelTrainer(
+
+    trainer = MultilabelTrainer(
             model=model,
             args=training_args,
             train_dataset=train_dataset if training_args.do_train else None,
