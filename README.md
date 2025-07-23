@@ -167,14 +167,14 @@ We report the arithmetic, harmonic, and geometric mean across tasks following [S
 
 ### Where are the datasets?
 
-We provide access to LexGLUE on [Hugging Face Datasets](https://huggingface.co/datasets) (Lhoest et al., 2021) at https://huggingface.co/datasets/lex_glue.  
+We provide access to LexGLUE on [Hugging Face Datasets](https://huggingface.co/datasets) (Lhoest et al., 2021) at https://huggingface.co/datasets/coastalcph/lex_glue.  
 
 For example to load the SCOTUS [Spaeth et al. (2020)](http://scdb.wustl.edu) dataset, you first simply install the datasets python library and then make the following call:
 
 ```python
 
 from datasets import load_dataset 
-dataset = load_dataset("lex_glue", "scotus")
+dataset = load_dataset("coastalcph/lex_glue", "scotus")
 
 ```
 
