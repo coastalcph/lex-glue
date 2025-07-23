@@ -2,20 +2,6 @@
 
 ![LexGLUE Graphic](https://repository-images.githubusercontent.com/411072132/5c49b313-ab36-4391-b785-40d9478d0f73)
 
-
-## :mega: :rotating_light: Important Notice related to the EUR-LEX dataset (Fixed) :bug: :point_left:
-
-There was a major bug in HuggingFace data loader for the EUR-LEX task, which affected the label list under consideration in the training script. In the original experiments for the reported leaderboard we used custom data loaders, and then we built and released the HuggingFace dataset and data loader w/o noticing this “stealthy” bug. In other words, the leaderboard results are reliable.
-
-The :bug: has been already fixed, so you can continue developing models seamlessly. Make sure to update the HF Datasets library and clear the cache, in case there are cached versions of the dataset:
-
-```bash
-pip install --upgrade datasets
-rm -rf  ~/.cache/huggingface/datasets/lex_glue
-```
-
-Thanks to [@JamesLYC88](https://github.com/JamesLYC88) for digging up the :bug:, and sorry for the inconvenience! :hugs:
-
 ## Dataset Summary
 
 Inspired by the recent widespread use of the GLUE multi-task benchmark NLP dataset ([Wang et al., 2018](https://aclanthology.org/W18-5446/)), the subsequent more difficult SuperGLUE ([Wang et al., 2109](https://openreview.net/forum?id=rJ4km2R5t7)), other previous multi-task NLP benchmarks ([Conneau and Kiela,2018](https://aclanthology.org/L18-1269/); [McCann et al., 2018](https://arxiv.org/abs/1806.08730)), and similar initiatives in other domains ([Peng et al., 2019](https://arxiv.org/abs/1906.05474)), we introduce LexGLUE, a benchmark dataset to evaluate the performance of NLP methods in legal tasks. LexGLUE is based on seven existing legal NLP datasets, selected using criteria largely from SuperGLUE.
